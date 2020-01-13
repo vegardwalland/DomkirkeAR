@@ -1,4 +1,6 @@
 language: android
+os:
+  - linux
 dist: trusty
 
 android:
