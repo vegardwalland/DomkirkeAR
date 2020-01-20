@@ -22,7 +22,7 @@ public class PermissionHelper {
         }
     }
 
-    private static boolean getCameraPermission(Activity activity) {
+    public static boolean getCameraPermission(Activity activity) {
         return ContextCompat.checkSelfPermission(activity, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED;
     }
 
