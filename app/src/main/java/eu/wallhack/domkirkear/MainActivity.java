@@ -3,12 +3,18 @@ package eu.wallhack.domkirkear;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationManager;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.widget.TextView;
 
 import eu.wallhack.domkirkear.common.PermissionHelper;
 
@@ -40,6 +46,7 @@ import eu.wallhack.domkirkear.helpers.DisplayRotationHelper;
 import eu.wallhack.domkirkear.helpers.FullScreenHelper;
 import eu.wallhack.domkirkear.helpers.TapHelper;
 import eu.wallhack.domkirkear.helpers.TrackingStateHelper;
+import eu.wallhack.domkirkear.listeners.LocationListener;
 import eu.wallhack.domkirkear.rendering.BackgroundRenderer;
 import eu.wallhack.domkirkear.rendering.ObjectRenderer;
 import eu.wallhack.domkirkear.rendering.PlaneRenderer;
@@ -81,6 +88,13 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
     private final ArrayList<ColoredAnchor> anchors = new ArrayList<>();
 
+    // The system Location Manager
+    private LocationManager locationManager;
+    private LocationListener gpsListener;
+    public static TextView gpsViewTop;
+    public static TextView gpsViewBottom;
+    public static TextView gpsViewAccuracy;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -103,12 +117,23 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         surfaceView.setWillNotDraw(false);
 
         installRequested = false;
+
     }
 
+
+    @SuppressLint("MissingPermission")
     @Override
     protected void onResume() {
         super.onResume();
         PermissionHelper.askCameraPermission(MainActivity.this);
+        PermissionHelper.askGPSPermission(MainActivity.this);
+
+        // Set ut GPS
+        gpsViewTop = findViewById(R.id.gpsView);
+        gpsViewBottom = findViewById(R.id.gpsView2);
+        gpsViewAccuracy = findViewById(R.id.gpsViewAccuracy);
+        locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+        gpsListener = new LocationListener();
 
 
         if (session == null) {
@@ -122,7 +147,8 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                     case INSTALLED:
                         break;
                 }
-                if (!PermissionHelper.getCameraPermission(MainActivity.this)) {
+                if (!PermissionHelper.getCameraPermission(MainActivity.this) ||
+                        !PermissionHelper.getGPSPermission(MainActivity.this)) {
                     return;
                 }
                 // Create the session.
@@ -161,6 +187,12 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             session = null;
             return;
         }
+
+        // Request location updates from GPS
+
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, gpsListener);
+        // Request location updates from network provider
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, gpsListener);
 
         surfaceView.onResume();
         displayRotationHelper.onResume();
@@ -365,6 +397,12 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         return false;
     }
 
+    public static void writeGPSCoordinatesToView(Location location) {
+        //String currentLocation = "Latitude = " + location.getLatitude() + ". Longitude = " + location.getLongitude();
+        gpsViewTop.setText("Latitude = " + location.getLatitude());
+        gpsViewBottom.setText("Longitude = " + location.getLongitude());
+        gpsViewAccuracy.setText(("Accuracy = " + location.getAccuracy()));
+    }
 
     // Callback for the permission request
     @Override
