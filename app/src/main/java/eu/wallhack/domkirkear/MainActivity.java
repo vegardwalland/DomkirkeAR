@@ -20,7 +20,10 @@ import eu.wallhack.domkirkear.common.PermissionHelper;
 
 import com.google.ar.core.Anchor;
 import com.google.ar.core.ArCoreApk;
+import com.google.ar.core.AugmentedImage;
+import com.google.ar.core.AugmentedImageDatabase;
 import com.google.ar.core.Camera;
+import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
@@ -37,11 +40,14 @@ import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
+import eu.wallhack.domkirkear.common.imageTracking;
 import eu.wallhack.domkirkear.helpers.DisplayRotationHelper;
 import eu.wallhack.domkirkear.helpers.FullScreenHelper;
 import eu.wallhack.domkirkear.helpers.TapHelper;
@@ -74,6 +80,8 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     // Temporary matrix allocated here to reduce number of allocations for each frame.
     private final float[] anchorMatrix = new float[16];
     private static final float[] DEFAULT_COLOR = new float[]{0f, 0f, 0f, 0f};
+
+
 
     // Anchors created from taps used for object placing with a given color.
     private static class ColoredAnchor {
@@ -189,10 +197,17 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         }
 
         // Request location updates from GPS
-
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, gpsListener);
         // Request location updates from network provider
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, gpsListener);
+
+        //Configure ARCore session to track images
+        Config config = new Config(session);
+        AugmentedImageDatabase imageDatabase = imageTracking.loadImageDatabase(getApplicationContext(), session);
+        if (imageDatabase != null) {
+            config.setAugmentedImageDatabase(imageDatabase);
+            session.configure(config);
+        }
 
         surfaceView.onResume();
         displayRotationHelper.onResume();
@@ -339,6 +354,38 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             // Avoid crashing the application due to unhandled exceptions.
             Log.e(TAG, "Exception on the OpenGL thread", t);
         }
+
+        // Make ARCore look for images to be augmented
+        try {
+            Frame frame = session.update();
+            Collection<AugmentedImage> updatedAugmentedImages = frame.getUpdatedTrackables(AugmentedImage.class);
+
+            for (AugmentedImage img : updatedAugmentedImages) {
+                // Developers can:
+                // 1. Check tracking state.
+                // 2. Render something based on the pose, or attach an anchor.
+                if (img.getTrackingState() == TrackingState.TRACKING) {
+                    // Use getTrackingMethod() to determine whether the image is currently
+                    // being tracked by the camera.
+                    if (img.getTrackingMethod() == AugmentedImage.TrackingMethod.LAST_KNOWN_POSE) {
+                        // The planar target is currently being tracked based on its last
+                        // known pose.
+                    } else    // (getTrackingMethod() == TrackingMethod.FULL_TRACKING)
+                    {
+                        // The planar target is being tracked using the current camera image.
+                    }
+                    // You can also check which image this is based on getName().
+                    /*if (img.getIndex() == dogIndex) {
+                        // TODO: Render a 3D version of a dog in front of img.getCenterPose().
+                    } else if (img.getIndex() == catIndex) {
+                        // TODO: Render a 3D version of a cat in front of img.getCenterPose().
+                    }*/
+                }
+            }
+        } catch (CameraNotAvailableException e) {
+            e.printStackTrace();
+        }
+
     }
 
     // Handle only one tap per frame, as taps are usually low frequency compared to frame rate.
