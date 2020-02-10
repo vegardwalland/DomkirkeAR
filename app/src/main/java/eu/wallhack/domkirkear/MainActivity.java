@@ -3,11 +3,9 @@ package eu.wallhack.domkirkear;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
-import android.location.Location;
 import android.location.LocationManager;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
@@ -40,7 +38,6 @@ import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -99,9 +96,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     // The system Location Manager
     private LocationManager locationManager;
     private LocationListener gpsListener;
-    public static TextView gpsViewTop;
-    public static TextView gpsViewBottom;
-    public static TextView gpsViewAccuracy;
+    public TextView topView;
 
 
     @Override
@@ -110,6 +105,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         setContentView(R.layout.activity_main);
 
         surfaceView = findViewById(R.id.surfaceview);
+        topView = findViewById(R.id.topView);
         displayRotationHelper = new DisplayRotationHelper(/*context=*/ this);
 
         // Set up tap listener.
@@ -137,9 +133,6 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         PermissionHelper.askGPSPermission(MainActivity.this);
 
         // Set ut GPS
-        gpsViewTop = findViewById(R.id.gpsView);
-        gpsViewBottom = findViewById(R.id.gpsView2);
-        gpsViewAccuracy = findViewById(R.id.gpsViewAccuracy);
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         gpsListener = new LocationListener();
 
@@ -203,7 +196,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
 
         //Configure ARCore session to track images
         Config config = new Config(session);
-        AugmentedImageDatabase imageDatabase = imageTracking.loadImageDatabase(getApplicationContext(), session);
+        AugmentedImageDatabase imageDatabase = imageTracking.createImageDatabase(getApplicationContext(), session);
         if (imageDatabase != null) {
             config.setAugmentedImageDatabase(imageDatabase);
             session.configure(config);
@@ -355,7 +348,9 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             Log.e(TAG, "Exception on the OpenGL thread", t);
         }
 
+
         // Make ARCore look for images to be augmented
+        //TODO Merge with previous try catch?
         try {
             Frame frame = session.update();
             Collection<AugmentedImage> updatedAugmentedImages = frame.getUpdatedTrackables(AugmentedImage.class);
@@ -367,6 +362,10 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                 if (img.getTrackingState() == TrackingState.TRACKING) {
                     // Use getTrackingMethod() to determine whether the image is currently
                     // being tracked by the camera.
+                    topView.setText("Tracking: " + img.getName());
+                    float[] objColor;
+                    objColor = new float[]{255.0f, 0.0f, 0.0f, 255.0f};
+                    anchors.add(new ColoredAnchor(img.createAnchor(img.getCenterPose()), objColor));
                     if (img.getTrackingMethod() == AugmentedImage.TrackingMethod.LAST_KNOWN_POSE) {
                         // The planar target is currently being tracked based on its last
                         // known pose.
@@ -382,10 +381,9 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                     }*/
                 }
             }
-        } catch (CameraNotAvailableException e) {
-            e.printStackTrace();
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
-
     }
 
     // Handle only one tap per frame, as taps are usually low frequency compared to frame rate.
@@ -442,13 +440,6 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             }
         }
         return false;
-    }
-
-    public static void writeGPSCoordinatesToView(Location location) {
-        //String currentLocation = "Latitude = " + location.getLatitude() + ". Longitude = " + location.getLongitude();
-        gpsViewTop.setText("Latitude = " + location.getLatitude());
-        gpsViewBottom.setText("Longitude = " + location.getLongitude());
-        gpsViewAccuracy.setText(("Accuracy = " + location.getAccuracy()));
     }
 
     // Callback for the permission request
