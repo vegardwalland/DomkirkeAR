@@ -23,11 +23,10 @@
     <TextView
         android:id="@+id/topView"
         android:layout_width="350dp"
-        android:layout_height="40dp"
+        android:layout_height="60dp"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="30dp"
-        android:text="@string/app_name"
         android:textColor="@android:color/holo_red_dark"
         android:textSize="18sp"
         android:textStyle="bold" />

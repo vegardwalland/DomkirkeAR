@@ -369,9 +369,12 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
                     if (img.getTrackingMethod() == AugmentedImage.TrackingMethod.LAST_KNOWN_POSE) {
                         // The planar target is currently being tracked based on its last
                         // known pose.
-                    } else    // (getTrackingMethod() == TrackingMethod.FULL_TRACKING)
-                    {
+                        topView.setText("Tracking: Last known pose tracking of " + img.getName());
+                    } else if (img.getTrackingMethod() == AugmentedImage.TrackingMethod.FULL_TRACKING) {
                         // The planar target is being tracked using the current camera image.
+                        topView.setText("Tracking: Full tracking of " + img.getName());
+                    } else if (img.getTrackingMethod() == AugmentedImage.TrackingMethod.NOT_TRACKING) {
+                        topView.setText("Not tracking");
                     }
                     // You can also check which image this is based on getName().
                     /*if (img.getIndex() == dogIndex) {
