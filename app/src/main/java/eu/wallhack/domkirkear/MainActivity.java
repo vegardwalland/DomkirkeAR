@@ -169,8 +169,6 @@ public class MainActivity extends AppCompatActivity {
                 if (augmentedImage.getName().contains("qrCode")){
                     // here we got that image has been detected
                     // we will render our 3D asset in center of detected image
-                    arFragment.getArSceneView().getScene().getCamera().setLocalPosition(Vector3.zero());
-
                     renderObject(arFragment,
                             augmentedImage.createAnchor(augmentedImage.getCenterPose()),
                             R.raw.andy);
