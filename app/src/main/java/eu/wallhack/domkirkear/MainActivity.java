@@ -27,6 +27,7 @@ import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.FrameTime;
 import com.google.ar.sceneform.Node;
+import com.google.ar.sceneform.math.Vector3;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.TransformableNode;
@@ -157,6 +158,9 @@ public class MainActivity extends AppCompatActivity {
     private void onUpdateFrame(FrameTime frameTime){
         Frame frame = arFragment.getArSceneView().getArFrame();
 
+        Vector3 localPosition = arFragment.getArSceneView().getScene().getCamera().getLocalPosition();
+        textView.setText(localPosition.toString());
+
         Collection<AugmentedImage> augmentedImages = frame.getUpdatedTrackables(AugmentedImage.class);
 
         for (AugmentedImage augmentedImage : augmentedImages){
@@ -165,6 +169,8 @@ public class MainActivity extends AppCompatActivity {
                 if (augmentedImage.getName().contains("qrCode")){
                     // here we got that image has been detected
                     // we will render our 3D asset in center of detected image
+                    arFragment.getArSceneView().getScene().getCamera().setLocalPosition(Vector3.zero());
+
                     renderObject(arFragment,
                             augmentedImage.createAnchor(augmentedImage.getCenterPose()),
                             R.raw.andy);
