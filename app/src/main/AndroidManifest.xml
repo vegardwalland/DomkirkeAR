@@ -3,17 +3,15 @@
     package="eu.wallhack.domkirkear">
 
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Request permission to use GPS data -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <!-- Indicates that the app requires ARCore ("AR Required"). Ensures the app is
          visible only in the Google Play Store on devices that support ARCore.
     -->
     <uses-feature android:name="android.hardware.camera.ar" />
-
-    <!-- Request permission to use GPS data -->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <!-- Needed if app targets Android 5.0 (API level 21) or higher -->
     <uses-feature android:name="android.hardware.location.gps" />
-
 
     <application
         android:allowBackup="true"

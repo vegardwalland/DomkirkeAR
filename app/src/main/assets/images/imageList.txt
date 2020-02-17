@@ -1,0 +1,1 @@
+qrCode|C:\Bachelor\DomkirkeAR\app\src\main\assets\images\qrCode.png|0.089

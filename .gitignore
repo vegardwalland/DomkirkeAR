@@ -4,6 +4,10 @@
 *.ap_
 *.aab
 
+# Built models
+*.sfa
+*.sfb
+
 # Files for the ART/Dalvik VM
 *.dex
 
