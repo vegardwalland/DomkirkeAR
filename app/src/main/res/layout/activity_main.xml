@@ -14,7 +14,7 @@
     <TextView
         android:id="@+id/topView"
         android:layout_width="350dp"
-        android:layout_height="60dp"
+        android:layout_height="240dp"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="30dp"

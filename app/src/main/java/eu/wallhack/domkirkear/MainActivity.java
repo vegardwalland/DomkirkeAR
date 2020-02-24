@@ -18,6 +18,7 @@ import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
+import com.google.ar.core.Pose;
 import com.google.ar.core.Session;
 import com.google.ar.core.TrackingState;
 import com.google.ar.core.exceptions.UnavailableApkTooOldException;
@@ -28,14 +29,18 @@ import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.FrameTime;
 import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.math.Vector3;
+import com.google.ar.sceneform.rendering.Color;
+import com.google.ar.sceneform.rendering.Material;
+import com.google.ar.sceneform.rendering.MaterialFactory;
 import com.google.ar.sceneform.rendering.ModelRenderable;
+import com.google.ar.sceneform.rendering.Renderable;
 import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.TransformableNode;
 
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
+import eu.wallhack.domkirkear.common.LocationUtils;
 import eu.wallhack.domkirkear.common.PermissionHelper;
 import eu.wallhack.domkirkear.common.imageTracking;
 import eu.wallhack.domkirkear.listeners.LocationListener;
@@ -43,6 +48,16 @@ import eu.wallhack.domkirkear.listeners.LocationListener;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
+
+    // Debug
+    private int newAndys = 0;
+
+    Vector3 gpsCoordsOfQrCode = new Vector3(58.937956f, 60f, 5.694259f);
+    Vector3 gpsCoordsOfTest = new Vector3(58.937943f, 60f,5.693165f);
+    Vector3 offset = null;
+    Vector3 testPos = new Vector3();
+
+    private boolean andyCreated = false;
 
     private ModelRenderable andyRenderable;
     private ArFragment arFragment;
@@ -53,6 +68,8 @@ public class MainActivity extends AppCompatActivity {
     private LocationManager locationManager;
     private LocationListener gpsListener;
     private Session session;
+    private Anchor test;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -100,11 +117,13 @@ public class MainActivity extends AppCompatActivity {
                     AnchorNode anchorNode = new AnchorNode(anchor);
                     anchorNode.setParent(arFragment.getArSceneView().getScene());
 
+
+                    renderObject(arFragment, anchor, R.raw.andy);
                     // Create the transformable andy and add it to the anchor.
-                    TransformableNode andy = new TransformableNode(arFragment.getTransformationSystem());
-                    andy.setParent(anchorNode);
-                    andy.setRenderable(andyRenderable);
-                    andy.select();
+//                    TransformableNode andy = new TransformableNode(arFragment.getTransformationSystem());
+//                    andy.setParent(anchorNode);
+//                    andy.setRenderable(andyRenderable);
+//                    andy.select();
                 });
     }
 
@@ -156,22 +175,47 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void onUpdateFrame(FrameTime frameTime){
-        Frame frame = arFragment.getArSceneView().getArFrame();
 
-        Vector3 localPosition = arFragment.getArSceneView().getScene().getCamera().getLocalPosition();
-        textView.setText(localPosition.toString());
+        Frame frame = arFragment.getArSceneView().getArFrame();
 
         Collection<AugmentedImage> augmentedImages = frame.getUpdatedTrackables(AugmentedImage.class);
 
         for (AugmentedImage augmentedImage : augmentedImages){
+            String debugText = String.format("Our pos %s" +
+                            "New Andys: %d\n" +
+                            "Tracking image name: %s\n" +
+                            "Tracking state: %s\n" +
+                            "CenterPose: %s\n" +
+                            "No of nodes: %d\n" +
+                            "Second andy pose: %s",
+                    arFragment.getArSceneView().getScene().getCamera().getLocalPosition(),
+                    newAndys,
+                    augmentedImage.getName(),
+                    augmentedImage.getTrackingState(),
+                    augmentedImage.getCenterPose(),
+                    arFragment.getArSceneView().getScene().getChildren().size(),
+                    ((test != null) ?test.getPose() : ""));
+            textView.setText(debugText);
             if (augmentedImage.getTrackingState() == TrackingState.TRACKING){
 
                 if (augmentedImage.getName().contains("qrCode")){
                     // here we got that image has been detected
                     // we will render our 3D asset in center of detected image
-                    renderObject(arFragment,
-                            augmentedImage.createAnchor(augmentedImage.getCenterPose()),
-                            R.raw.andy);
+                    if (!andyCreated) {
+                        newAndys++;
+
+                        Anchor qrAnchor = augmentedImage.createAnchor(augmentedImage.getCenterPose());
+
+                        renderObject(arFragment,
+                                qrAnchor,
+                                R.raw.andy);
+                        offset = arFragment.getArSceneView().getScene().getChildren().get(0).getLocalPosition();
+
+                        testPos = LocationUtils.createLocalLocation(gpsCoordsOfTest, gpsCoordsOfQrCode, offset);
+                        test = arFragment.getArSceneView().getSession().createAnchor(Pose.makeTranslation(testPos.x, testPos.y, testPos.z));
+                        renderObject(arFragment, test, R.raw.andy);
+                        andyCreated = true;
+                    }
                 }
             }
         }
@@ -198,10 +242,23 @@ public class MainActivity extends AppCompatActivity {
         AnchorNode anchorNode = new AnchorNode(anchor);
         TransformableNode node = new TransformableNode(fragment.getTransformationSystem());
         node.setRenderable(renderable);
+        addHighlightToNode(node);
+        node.getScaleController().setMaxScale(15f);
+        node.setLocalScale(new Vector3(5f, 15f, 5f));
         node.setParent(anchorNode);
         fragment.getArSceneView().getScene().addChild(anchorNode);
         node.select();
     }
 
+    private void addHighlightToNode(Node node) {
+        CompletableFuture<Material> materialCompletableFuture =
+                MaterialFactory.makeOpaqueWithColor(this, new Color(255, 0, 0));
+
+        materialCompletableFuture.thenAccept(material -> {
+            Renderable r2 = node.getRenderable().makeCopy();
+            r2.setMaterial(material);
+            node.setRenderable(r2);
+        });
+    }
 
 }
