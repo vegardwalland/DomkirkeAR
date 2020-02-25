@@ -22,6 +22,18 @@ public class LocationUtils {
         return createLocalLocation(nodeLocation, mainNodeLocation, offset);
     }
 
+    public static float calculateLengthInWorld(Vector3 nodeLocation, Vector3 mainNodeLocation) {
+        float lat1 = (float)Math.toRadians(nodeLocation.x);
+        float lat2 = (float)Math.toRadians(mainNodeLocation.x);
+        float lon1 = (float)Math.toRadians(nodeLocation.z);
+        float lon2 = (float)Math.toRadians(mainNodeLocation.z);
+
+
+        float length = (float)(0.5 - (Math.cos(lat2-lat1))/2 + Math.cos(lat1)*Math.cos(lat2)*((1-Math.cos(lon2-lon1))/2));
+        length = (float)(2*getRadius(lat1)*Math.asin(Math.sqrt(length)));
+        return length;
+    }
+
     private static double getRadius(double latitudeInRadians) {
         double An = EQUATORIAL_RADIUS_IN_METERS*EQUATORIAL_RADIUS_IN_METERS* Math.cos(latitudeInRadians);
         double Bn = POLAR_RADIUS_IN_METERS*POLAR_RADIUS_IN_METERS * Math.sin(latitudeInRadians);

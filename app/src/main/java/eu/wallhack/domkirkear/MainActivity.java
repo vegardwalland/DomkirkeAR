@@ -53,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
     private int newAndys = 0;
 
     Vector3 gpsCoordsOfQrCode = new Vector3(58.937956f, 60f, 5.694259f);
-    Vector3 gpsCoordsOfTest = new Vector3(58.937943f, 60f,5.693165f);
+    Vector3 gpsCoordsOfTest = new Vector3(58.937943f, 60f, 5.693165f);
     Vector3 offset = null;
     Vector3 testPos = new Vector3();
 
@@ -78,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
         textView = findViewById(R.id.topView);
 
         // Make sure we have a ArSceneView
-        while (arFragment.getArSceneView() == null);
+        while (arFragment.getArSceneView() == null) ;
 
         // Explicitly create session
         try {
@@ -174,13 +174,13 @@ public class MainActivity extends AppCompatActivity {
         session.configure(config);
     }
 
-    private void onUpdateFrame(FrameTime frameTime){
+    private void onUpdateFrame(FrameTime frameTime) {
 
         Frame frame = arFragment.getArSceneView().getArFrame();
 
         Collection<AugmentedImage> augmentedImages = frame.getUpdatedTrackables(AugmentedImage.class);
 
-        for (AugmentedImage augmentedImage : augmentedImages){
+        for (AugmentedImage augmentedImage : augmentedImages) {
             String debugText = String.format("Our pos %s" +
                             "New Andys: %d\n" +
                             "Tracking image name: %s\n" +
@@ -194,11 +194,11 @@ public class MainActivity extends AppCompatActivity {
                     augmentedImage.getTrackingState(),
                     augmentedImage.getCenterPose(),
                     arFragment.getArSceneView().getScene().getChildren().size(),
-                    ((test != null) ?test.getPose() : ""));
+                    ((test != null) ? test.getPose() : ""));
             textView.setText(debugText);
-            if (augmentedImage.getTrackingState() == TrackingState.TRACKING){
+            if (augmentedImage.getTrackingState() == TrackingState.TRACKING) {
 
-                if (augmentedImage.getName().contains("qrCode")){
+                if (augmentedImage.getName().contains("qrCode")) {
                     // here we got that image has been detected
                     // we will render our 3D asset in center of detected image
                     if (!andyCreated) {
@@ -222,7 +222,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void renderObject(ArFragment fragment, Anchor anchor, int model){
+    private void renderObject(ArFragment fragment, Anchor anchor, int model) {
         ModelRenderable.builder()
                 .setSource(this, model)
                 .build()
@@ -238,7 +238,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void addNodeToScene(ArFragment fragment, Anchor anchor, ModelRenderable renderable){
+    private void addNodeToScene(ArFragment fragment, Anchor anchor, ModelRenderable renderable) {
         AnchorNode anchorNode = new AnchorNode(anchor);
         TransformableNode node = new TransformableNode(fragment.getTransformationSystem());
         node.setRenderable(renderable);
