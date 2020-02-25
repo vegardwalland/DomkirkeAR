@@ -12,7 +12,7 @@ public class LocationUtils {
 
         float localX = (float) (Math.toRadians(nodeLocation.x - mainNodeLocation.x) * getRadius(lat) + offset.x);
         float localY = (float) (Math.toRadians(nodeLocation.y - mainNodeLocation.y) * getRadius(lat) + offset.y);
-        float localZ = (float) (Math.toRadians(nodeLocation.z - mainNodeLocation.z) * getRadius(lat) + offset.z);
+        float localZ = (float) (Math.toRadians(nodeLocation.z - mainNodeLocation.z) * getRadius(lat)*Math.cos(Math.toRadians(mainNodeLocation.x)) + offset.z);
 
         return new Vector3(localX, localY, localZ);
     }
