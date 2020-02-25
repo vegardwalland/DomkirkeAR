@@ -32,10 +32,7 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
     implementation 'com.google.ar:core:1.15.0'
-    // Obj - a simple Wavefront OBJ file loader
-    // https://github.com/javagl/Obj
-    implementation 'de.javagl:obj:0.2.1'
-    implementation 'com.google.android.material:material:1.2.0-alpha04'
+    implementation 'com.google.android.material:material:1.2.0-alpha05'
     // Provides ARCore Session and related resources.
     implementation 'com.google.ar:core:1.15.0'
     // Provides ArFragment, and other UX resources.

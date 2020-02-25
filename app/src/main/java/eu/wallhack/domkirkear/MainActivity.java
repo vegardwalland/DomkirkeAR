@@ -26,14 +26,11 @@ import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.FrameTime;
-import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.ux.ArFragment;
 import com.google.ar.sceneform.ux.TransformableNode;
 
 import java.util.Collection;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 import eu.wallhack.domkirkear.common.PermissionHelper;
 import eu.wallhack.domkirkear.common.imageTracking;
@@ -52,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
     private LocationManager locationManager;
     private LocationListener gpsListener;
     private Session session;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
         textView = findViewById(R.id.topView);
 
         // Make sure we have a ArSceneView
-        while (arFragment.getArSceneView() == null);
+        while (arFragment.getArSceneView() == null) ;
 
         // Explicitly create session
         try {
@@ -154,15 +152,15 @@ public class MainActivity extends AppCompatActivity {
         session.configure(config);
     }
 
-    private void onUpdateFrame(FrameTime frameTime){
+    private void onUpdateFrame(FrameTime frameTime) {
         Frame frame = arFragment.getArSceneView().getArFrame();
 
         Collection<AugmentedImage> augmentedImages = frame.getUpdatedTrackables(AugmentedImage.class);
 
-        for (AugmentedImage augmentedImage : augmentedImages){
-            if (augmentedImage.getTrackingState() == TrackingState.TRACKING){
+        for (AugmentedImage augmentedImage : augmentedImages) {
+            if (augmentedImage.getTrackingState() == TrackingState.TRACKING) {
 
-                if (augmentedImage.getName().contains("qrCode")){
+                if (augmentedImage.getName().contains("qrCode")) {
                     // here we got that image has been detected
                     // we will render our 3D asset in center of detected image
                     renderObject(arFragment,
@@ -174,7 +172,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void renderObject(ArFragment fragment, Anchor anchor, int model){
+    private void renderObject(ArFragment fragment, Anchor anchor, int model) {
         ModelRenderable.builder()
                 .setSource(this, model)
                 .build()
@@ -190,7 +188,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void addNodeToScene(ArFragment fragment, Anchor anchor, ModelRenderable renderable){
+    private void addNodeToScene(ArFragment fragment, Anchor anchor, ModelRenderable renderable) {
         AnchorNode anchorNode = new AnchorNode(anchor);
         TransformableNode node = new TransformableNode(fragment.getTransformationSystem());
         node.setRenderable(renderable);
