@@ -3,12 +3,12 @@ package eu.wallhack.domkirkear.listeners;
 import android.location.Location;
 import android.os.Bundle;
 
-import eu.wallhack.domkirkear.MainActivity;
-
 public class LocationListener implements android.location.LocationListener {
 
     @Override
     public void onLocationChanged(Location location) {
+
+
     }
 
     @Override
