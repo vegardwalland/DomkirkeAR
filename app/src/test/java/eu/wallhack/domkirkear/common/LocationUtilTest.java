@@ -10,8 +10,8 @@ public class LocationUtilTest {
 
     @Test
     public void testLocalGridCoordinates() {
-        Vector3 mainVector = new Vector3(58.938198f, 0f, 5.695740f);
-        Vector3 nodeVector = new Vector3(58.938329f, 0f, 5.695950f);
+        Vector3 mainVector = new Vector3(37.929847f,0f, -8.286010f);
+        Vector3 nodeVector = new Vector3(76.992330f, 0f, 67.814456f);
 
         Vector3 localVector = LocationUtils.createLocalLocation(nodeVector, mainVector);
 

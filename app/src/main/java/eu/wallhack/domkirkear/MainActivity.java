@@ -5,6 +5,7 @@ import android.content.Context;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -13,8 +14,16 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.ar.core.AugmentedImageDatabase;
 import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
+import com.google.ar.core.Plane;
+import com.google.ar.core.Session;
+import com.google.ar.core.TrackingState;
+import com.google.ar.core.exceptions.UnavailableApkTooOldException;
+import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
+import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
+import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
 import com.google.ar.sceneform.FrameTime;
 import com.google.ar.sceneform.Node;
+import com.google.ar.sceneform.SceneView;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.ux.ArFragment;
 
@@ -26,6 +35,8 @@ import eu.wallhack.domkirkear.common.imageTracking;
 import eu.wallhack.domkirkear.listeners.LocationListener;
 import uk.co.appoly.arcorelocation.LocationMarker;
 import uk.co.appoly.arcorelocation.LocationScene;
+import uk.co.appoly.arcorelocation.rendering.LocationNode;
+import uk.co.appoly.arcorelocation.rendering.LocationNodeRender;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -33,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
 
     private ModelRenderable andyRenderable;
     private ArFragment arFragment;
-
+    private Session session;
     private TextView textView;
 
     // The system Location Manager
@@ -52,6 +63,24 @@ public class MainActivity extends AppCompatActivity {
         // Set up GPS
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         gpsListener = new LocationListener();
+
+        // Make sure we have a ArSceneView
+        while (arFragment.getArSceneView() == null);
+
+        // Explicitly create session
+        try {
+            arFragment.getArSceneView().setupSession(new Session(MainActivity.this));
+        } catch (UnavailableArcoreNotInstalledException e) {
+            e.printStackTrace();
+        } catch (UnavailableApkTooOldException e) {
+            e.printStackTrace();
+        } catch (UnavailableSdkTooOldException e) {
+            e.printStackTrace();
+        } catch (UnavailableDeviceNotCompatibleException e) {
+            e.printStackTrace();
+        }
+
+        session = arFragment.getArSceneView().getSession();
 
         setupAutoFocus();
 
@@ -77,7 +106,41 @@ public class MainActivity extends AppCompatActivity {
                             return null;
                         });
 
-    }
+
+        arFragment.
+                getArSceneView().
+                getScene().
+                addOnUpdateListener(frameTime -> {
+                    if (locationScene == null) {
+                        // If our locationScene object hasn't been setup yet, this is a good time to do it
+                        // We know that here, the AR components have been initiated.
+                        locationScene = new LocationScene(this, arFragment.getArSceneView());
+
+
+                        // Adding a simple location marker of a 3D model
+                        locationScene.mLocationMarkers.add(
+                                new LocationMarker(
+                                        5.694220,
+                                        58.937933,
+                                        getAndy()));
+                    }
+
+                        Frame frame = arFragment.getArSceneView().getArFrame();
+                        if (frame == null) {
+                            return;
+                        }
+
+                        if (frame.getCamera().getTrackingState() != TrackingState.TRACKING) {
+                            return;
+                        }
+
+                        if (locationScene != null) {
+                            locationScene.processFrame(frame);
+                        }
+
+                });
+
+                }
 
     private Node getAndy() {
         Node base = new Node();
@@ -135,8 +198,10 @@ public class MainActivity extends AppCompatActivity {
     @SuppressLint("MissingPermission")
     private void onUpdateFrame(FrameTime frameTime) {
 
+
         Frame frame = arFragment.getArSceneView().getArFrame();
 
+        /*
         if (locationScene == null) {
             locationScene = new LocationScene(this, arFragment.getArSceneView());
             locationScene.mLocationMarkers.add(
@@ -147,15 +212,40 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Location Marker created", Toast.LENGTH_SHORT).show();
         }
 
-        String debugText = String.format("Our pos %s\n" +
-                        "No of nodes: %d\n",
-                arFragment.getArSceneView().getScene().getCamera().getLocalPosition(),
-                arFragment.getArSceneView().getScene().getChildren().size());
+         */
+
+        double latitude = 0;
+        double longitude = 0;
+        int noOfMarkers = 0;
+        double distanceInAR = 0;
+        for(LocationMarker marker: locationScene.mLocationMarkers){
+            noOfMarkers = locationScene.mLocationMarkers.size();
+            latitude = marker.latitude;
+            longitude = marker.longitude;
+            if(marker.anchorNode != null) {
+                distanceInAR = marker.anchorNode.getDistanceInAR();
+            }
+        }
+
+            String debugText = String.format("Our pos %s\n" +
+                        "No of nodes: %d\n" +
+                        "Marker latitude: %f\n" +
+                        "Marker longitude: %f\n" +
+                        "Number of markers: %d\n" +
+                        "Distance in AR: %f\n",
+                    arFragment.getArSceneView().getScene().getCamera().getLocalPosition(),
+                    arFragment.getArSceneView().getScene().getChildren().size(),
+                    latitude,
+                    longitude,
+                    noOfMarkers,
+                    distanceInAR);
         textView.setText(debugText);
 
         if (locationScene != null) {
             locationScene.processFrame(frame);
 
         }
+
+
     }
 }
