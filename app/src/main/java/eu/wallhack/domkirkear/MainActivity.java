@@ -17,6 +17,7 @@ import com.google.ar.core.Frame;
 import com.google.ar.core.Plane;
 import com.google.ar.core.Session;
 import com.google.ar.core.TrackingState;
+import com.google.ar.core.exceptions.CameraNotAvailableException;
 import com.google.ar.core.exceptions.UnavailableApkTooOldException;
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
@@ -159,6 +160,22 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
+        if (locationScene != null) {
+            locationScene.resume();
+        }
+
+        try {
+            arFragment.getArSceneView().resume();
+        } catch (CameraNotAvailableException ex) {
+            // TODO show message that camera not available
+            finish();
+            return;
+        }
+
+        if(arFragment.getArSceneView().getSession() == null) {
+
+        }
+
         // Check location permission
         while (!PermissionHelper.getGPSPermission(this)) {
             PermissionHelper.askGPSPermission(this);
@@ -245,7 +262,23 @@ public class MainActivity extends AppCompatActivity {
             locationScene.processFrame(frame);
 
         }
-
-
     }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+
+        if (locationScene != null) {
+            locationScene.pause();
+        }
+
+        arFragment.getArSceneView().pause();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        arFragment.getArSceneView().destroy();
+    }
+
 }
