@@ -29,7 +29,9 @@ import com.google.ar.sceneform.rendering.Color;
 import com.google.ar.sceneform.rendering.Material;
 import com.google.ar.sceneform.rendering.MaterialFactory;
 import com.google.ar.sceneform.rendering.ModelRenderable;
+import com.google.ar.sceneform.rendering.Renderable;
 
+import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -54,17 +56,18 @@ public class MainActivity extends AppCompatActivity {
     private Session session;
 
     //Debug text variables
-    Vector3 anchorNodePosition = Vector3.zero();
-    Vector3 markerNodePosition = Vector3.zero();
     Boolean createStartMarker = true;
     Location location;
-    private boolean firstAndyCreated;
+    private boolean firstAndyCreated = false;
+    private Random random;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         textView = findViewById(R.id.topView);
+
+        random = new Random();
 
         // Set up GPS
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
@@ -116,19 +119,6 @@ public class MainActivity extends AppCompatActivity {
                         locationScene = new LocationScene(this, arSceneView);
                     }
 
-                    Node firstAndy = getAndy();
-                    MaterialFactory.makeOpaqueWithColor(this, new Color(android.graphics.Color.BLUE)).thenAccept(m -> firstAndy.getRenderable().setMaterial(m));
-
-                    if (!firstAndyCreated) {
-                        // Adding a simple location marker of a 3D model
-                        locationScene.mLocationMarkers.add(
-                                new LocationMarker(
-                                        5.691703, 58.938292,
-                                        firstAndy));
-                        firstAndyCreated = true;
-                    }
-
-
                     Frame frame = arSceneView.getArFrame();
                     if (frame == null) {
                         return;
@@ -142,20 +132,38 @@ public class MainActivity extends AppCompatActivity {
                         locationScene.processFrame(frame);
                     }
 
+                    if (andyRenderable != null && !firstAndyCreated) {
+                        Node firstAndy = getAndy(andyRenderable.makeCopy());
+                        MaterialFactory.makeOpaqueWithColor(this, new Color(android.graphics.Color.BLUE)).thenAccept(firstAndy.getRenderable()::setMaterial);
+                        // Adding a simple location marker of a 3D model
+                        locationScene.mLocationMarkers.add(
+                                new LocationMarker(
+                                        5.691703, 58.938292,
+                                        firstAndy));
+                        firstAndyCreated = true;
+                    }
                 });
     }
 
     private Node getAndy() {
+        return getAndy(andyRenderable);
+    }
+
+    private Node getAndy(Renderable renderable) {
         Node base = new Node();
-        base.setRenderable(andyRenderable);
+        base.setRenderable(renderable);
         Context c = this;
         base.setOnTapListener((v, event) -> {
+            int colorValue = random.nextInt(0xFFFFFF) + 0xFF000000;
+            Color color = new Color(colorValue);
+            MaterialFactory.makeOpaqueWithColor(this, color).thenAccept(m -> v.getNode().getRenderable().setMaterial(m));
             Toast.makeText(
-                    c, "Andy touched.", Toast.LENGTH_LONG)
+                    c, "Andy touched. New color is " + Integer.toHexString(colorValue), Toast.LENGTH_LONG)
                     .show();
         });
         return base;
     }
+
 
     @SuppressLint("MissingPermission")
     @Override
