@@ -2,18 +2,22 @@ package eu.wallhack.domkirkear;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.ar.core.Anchor;
 import com.google.ar.core.AugmentedImageDatabase;
 import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
+import com.google.ar.core.HitResult;
 import com.google.ar.core.Plane;
 import com.google.ar.core.Session;
 import com.google.ar.core.TrackingState;
@@ -22,12 +26,19 @@ import com.google.ar.core.exceptions.UnavailableApkTooOldException;
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
+import com.google.ar.sceneform.AnchorNode;
 import com.google.ar.sceneform.FrameTime;
 import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.SceneView;
+import com.google.ar.sceneform.math.Vector3;
+import com.google.ar.sceneform.rendering.Color;
+import com.google.ar.sceneform.rendering.Material;
+import com.google.ar.sceneform.rendering.MaterialFactory;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.ux.ArFragment;
+import com.google.ar.sceneform.ux.TransformableNode;
 
+import java.util.Vector;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -85,9 +96,11 @@ public class MainActivity extends AppCompatActivity {
 
         setupAutoFocus();
 
+
         CompletableFuture<ModelRenderable> andy = ModelRenderable.builder()
                 .setSource(this, R.raw.andy)
                 .build();
+
 
         CompletableFuture.allOf(andy)
                 .handle(
@@ -101,12 +114,19 @@ public class MainActivity extends AppCompatActivity {
                             try {
                                 andyRenderable = andy.get();
 
+                                //Make andyRenderable red
+                                CompletableFuture<Material> redAndyMaterial =
+                                        MaterialFactory.makeOpaqueWithColor(this, new Color(android.graphics.Color.RED));
+
+                                redAndyMaterial.thenAccept(material -> {
+                                    andyRenderable.setMaterial(material);
+                                });
+
                             } catch (InterruptedException | ExecutionException e) {
                                 e.printStackTrace();
                             }
                             return null;
                         });
-
 
         arFragment.
                 getArSceneView().
@@ -121,8 +141,7 @@ public class MainActivity extends AppCompatActivity {
                         // Adding a simple location marker of a 3D model
                         locationScene.mLocationMarkers.add(
                                 new LocationMarker(
-                                        5.694220,
-                                        58.937933,
+                                        5.691703, 58.938292,
                                         getAndy()));
                     }
 
@@ -138,10 +157,8 @@ public class MainActivity extends AppCompatActivity {
                         if (locationScene != null) {
                             locationScene.processFrame(frame);
                         }
-
                 });
-
-                }
+    }
 
     private Node getAndy() {
         Node base = new Node();
@@ -218,29 +235,24 @@ public class MainActivity extends AppCompatActivity {
 
         Frame frame = arFragment.getArSceneView().getArFrame();
 
-        /*
-        if (locationScene == null) {
-            locationScene = new LocationScene(this, arFragment.getArSceneView());
-            locationScene.mLocationMarkers.add(
-                    new LocationMarker(
-                            5.694220,
-                            58.937933,
-                            getAndy()));
-            Toast.makeText(this, "Location Marker created", Toast.LENGTH_SHORT).show();
-        }
-
-         */
-
         double latitude = 0;
         double longitude = 0;
         int noOfMarkers = 0;
         double distanceInAR = 0;
+        Vector3 anchorNodePosition = Vector3.zero();
+        Vector3 markerNodePosition = Vector3.zero();
         for(LocationMarker marker: locationScene.mLocationMarkers){
             noOfMarkers = locationScene.mLocationMarkers.size();
             latitude = marker.latitude;
             longitude = marker.longitude;
             if(marker.anchorNode != null) {
+                marker.anchorNode.setLocalPosition(Vector3.zero());
+                anchorNodePosition = marker.anchorNode.getWorldPosition();
                 distanceInAR = marker.anchorNode.getDistanceInAR();
+            }
+            if(marker.node.isActive()){
+                marker.node.setLocalPosition(Vector3.zero());
+                markerNodePosition = marker.node.getLocalPosition();
             }
         }
 
@@ -249,18 +261,21 @@ public class MainActivity extends AppCompatActivity {
                         "Marker latitude: %f\n" +
                         "Marker longitude: %f\n" +
                         "Number of markers: %d\n" +
-                        "Distance in AR: %f\n",
+                        "Distance in AR: %f\n" +
+                        "Anchor position: %s\n" +
+                        "Node position: %s\n",
                     arFragment.getArSceneView().getScene().getCamera().getLocalPosition(),
                     arFragment.getArSceneView().getScene().getChildren().size(),
                     latitude,
                     longitude,
                     noOfMarkers,
-                    distanceInAR);
+                    distanceInAR,
+                    anchorNodePosition,
+                    markerNodePosition);
         textView.setText(debugText);
 
         if (locationScene != null) {
             locationScene.processFrame(frame);
-
         }
     }
 
