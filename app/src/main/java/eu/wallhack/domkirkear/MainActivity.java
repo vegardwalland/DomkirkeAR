@@ -57,8 +57,8 @@ public class MainActivity extends AppCompatActivity {
     Vector3 anchorNodePosition = Vector3.zero();
     Vector3 markerNodePosition = Vector3.zero();
     Boolean createStartMarker = true;
-    Location location = null;
-
+    Location location;
+    private boolean firstAndyCreated;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -114,14 +114,20 @@ public class MainActivity extends AppCompatActivity {
                         // If our locationScene object hasn't been setup yet, this is a good time to do it
                         // We know that here, the AR components have been initiated.
                         locationScene = new LocationScene(this, arSceneView);
+                    }
 
+                    Node firstAndy = getAndy();
+                    MaterialFactory.makeOpaqueWithColor(this, new Color(android.graphics.Color.BLUE)).thenAccept(m -> firstAndy.getRenderable().setMaterial(m));
 
+                    if (!firstAndyCreated) {
                         // Adding a simple location marker of a 3D model
                         locationScene.mLocationMarkers.add(
                                 new LocationMarker(
                                         5.691703, 58.938292,
-                                        getAndy()));
+                                        firstAndy));
+                        firstAndyCreated = true;
                     }
+
 
                     Frame frame = arSceneView.getArFrame();
                     if (frame == null) {
@@ -230,7 +236,7 @@ public class MainActivity extends AppCompatActivity {
         double distanceInAR = 0;
         Vector3 anchorNodePosition = Vector3.zero();
         Vector3 markerNodePosition = Vector3.zero();
-        for(LocationMarker marker: locationScene.mLocationMarkers){
+        for (LocationMarker marker : locationScene.mLocationMarkers) {
             noOfMarkers = locationScene.mLocationMarkers.size();
             latitude = marker.latitude;
             longitude = marker.longitude;
@@ -239,27 +245,27 @@ public class MainActivity extends AppCompatActivity {
                 anchorNodePosition = marker.anchorNode.getLocalPosition();
                 distanceInAR = marker.anchorNode.getDistanceInAR();
             }
-            if(location.hasAccuracy() && createStartMarker) {
+            if (location.hasAccuracy() && createStartMarker) {
                 locationScene.mLocationMarkers.add(
                         new LocationMarker(
                                 location.getLongitude(), location.getLatitude(),
                                 getAndy()));
                 createStartMarker = false;
             }
-            if(marker.node.isActive()){
+            if (marker.node.isActive()) {
                 marker.node.setLocalPosition(Vector3.zero());
                 markerNodePosition = marker.node.getLocalPosition();
             }
         }
 
         String debugText = String.format("Our pos %s\n" +
-                "No of nodes: %d\n" +
-                "Marker latitude: %f\n" +
-                "Marker longitude: %f\n" +
-                "Number of markers: %d\n" +
-                "Distance in AR: %f\n" +
-                "Anchor position: %s\n" +
-                "Node position: %s\n",
+                        "No of nodes: %d\n" +
+                        "Marker latitude: %f\n" +
+                        "Marker longitude: %f\n" +
+                        "Number of markers: %d\n" +
+                        "Distance in AR: %f\n" +
+                        "Anchor position: %s\n" +
+                        "Node position: %s\n",
                 arSceneView.getScene().getCamera().getLocalPosition(),
                 arSceneView.getScene().getChildren().size(),
                 latitude,
