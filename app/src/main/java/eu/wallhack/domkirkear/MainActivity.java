@@ -2,6 +2,7 @@ package eu.wallhack.domkirkear;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
@@ -51,6 +52,13 @@ public class MainActivity extends AppCompatActivity {
     private LocationScene locationScene;
     private ArSceneView arSceneView;
     private Session session;
+
+    //Debug text variables
+    Vector3 anchorNodePosition = Vector3.zero();
+    Vector3 markerNodePosition = Vector3.zero();
+    Boolean createStartMarker = true;
+    Location location = null;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -174,6 +182,8 @@ public class MainActivity extends AppCompatActivity {
         // Request location updates from network provider
         locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, gpsListener);
 
+        location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+
         // TODO Now that we're using Sceneform, can tracking images be set up through Sceneform now?
         // Configure ARCore session to track images
         Config config = arSceneView.getSession().getConfig();
@@ -220,16 +230,23 @@ public class MainActivity extends AppCompatActivity {
         double distanceInAR = 0;
         Vector3 anchorNodePosition = Vector3.zero();
         Vector3 markerNodePosition = Vector3.zero();
-        for (LocationMarker marker : locationScene.mLocationMarkers) {
+        for(LocationMarker marker: locationScene.mLocationMarkers){
             noOfMarkers = locationScene.mLocationMarkers.size();
             latitude = marker.latitude;
             longitude = marker.longitude;
             if (marker.anchorNode != null) {
                 marker.anchorNode.setLocalPosition(Vector3.zero());
-                anchorNodePosition = marker.anchorNode.getWorldPosition();
+                anchorNodePosition = marker.anchorNode.getLocalPosition();
                 distanceInAR = marker.anchorNode.getDistanceInAR();
             }
-            if (marker.node.isActive()) {
+            if(location.hasAccuracy() && createStartMarker) {
+                locationScene.mLocationMarkers.add(
+                        new LocationMarker(
+                                location.getLongitude(), location.getLatitude(),
+                                getAndy()));
+                createStartMarker = false;
+            }
+            if(marker.node.isActive()){
                 marker.node.setLocalPosition(Vector3.zero());
                 markerNodePosition = marker.node.getLocalPosition();
             }
