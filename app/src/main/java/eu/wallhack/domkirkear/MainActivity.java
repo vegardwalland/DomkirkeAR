@@ -6,10 +6,15 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
 
 import com.google.ar.core.AugmentedImageDatabase;
 import com.google.ar.core.Config;
@@ -46,7 +51,11 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
 
     private ModelRenderable andyRenderable;
+
+    // The layout elements
     private TextView textView;
+    private ConstraintLayout infoOverlay;
+    private ImageButton closeOverlayBtn;
 
     // The system Location Manager
     private LocationManager locationManager;
@@ -66,6 +75,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         textView = findViewById(R.id.topView);
+        infoOverlay = findViewById(R.id.infoOverlay);
+        closeOverlayBtn = findViewById(R.id.closeOverlayBtn);
+
+
 
         random = new Random();
 
@@ -77,6 +90,14 @@ public class MainActivity extends AppCompatActivity {
         createSession();
 
         setupAutoFocus();
+
+        //Configure button
+        closeOverlayBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                infoOverlay.setVisibility(arSceneView.GONE);
+            }
+        });
 
 
         CompletableFuture<ModelRenderable> andy = ModelRenderable.builder()
@@ -160,6 +181,9 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(
                     c, "Andy touched. New color is " + Integer.toHexString(colorValue), Toast.LENGTH_LONG)
                     .show();
+            if(infoOverlay.getVisibility()==arSceneView.GONE) {
+                infoOverlay.setVisibility(arSceneView.VISIBLE);
+            }
         });
         return base;
     }
