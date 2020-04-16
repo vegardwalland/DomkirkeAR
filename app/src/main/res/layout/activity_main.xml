@@ -64,80 +64,111 @@
             android:orientation="horizontal"
             app:layout_constraintGuide_percent="0.95" />
 
-        <androidx.core.widget.NestedScrollView
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/infoOverlay"
             android:layout_width="0dp"
             android:layout_height="0dp"
+            android:background="@drawable/layout_bg"
+            android:clickable="true"
+            android:focusable="true"
+            android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="@+id/bottom_guideline"
             app:layout_constraintLeft_toLeftOf="@+id/left_guideline"
             app:layout_constraintRight_toRightOf="@+id/right_guideline"
             app:layout_constraintTop_toTopOf="@+id/top_guideline">
 
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/infoOverlay"
-                android:layout_width="fill_parent"
-                android:layout_height="fill_parent"
-                android:background="@drawable/layout_bg"
-                android:clickable="true"
-                android:focusable="true"
-                android:visibility="visible">
+
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/right_button_guideline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintGuide_percent="0.95" />
+
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/top_button_guideline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                app:layout_constraintGuide_percent="0.03" />
 
 
-                <androidx.constraintlayout.widget.Guideline
-                    android:id="@+id/right_button_guideline"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    app:layout_constraintGuide_percent="0.95" />
+            <ImageButton
+                android:id="@+id/closeOverlayBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@color/material_on_background_disabled"
+                android:backgroundTint="#00FFFFFF"
+                android:contentDescription="@string/button_to_close_overlay"
+                android:src="@drawable/ic_close_window_black"
+                android:tint="#00FFFFFF"
+                android:visibility="visible"
+                app:layout_constraintRight_toRightOf="@+id/right_button_guideline"
+                app:layout_constraintTop_toTopOf="@+id/top_button_guideline" />
 
-                <androidx.constraintlayout.widget.Guideline
-                    android:id="@+id/top_button_guideline"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    app:layout_constraintGuide_percent="0.03" />
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/right_title_guideline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintGuide_percent="0.88" />
 
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/left_title_guideline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintGuide_percent="0.12" />
 
-                <ImageButton
-                    android:id="@+id/closeOverlayBtn"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@color/material_on_background_disabled"
-                    android:backgroundTint="#00FFFFFF"
-                    android:contentDescription="@string/button_to_close_overlay"
-                    android:src="@drawable/ic_close_window_black"
-                    android:tint="#00FFFFFF"
-                    android:visibility="visible"
-                    app:layout_constraintRight_toRightOf="@+id/right_button_guideline"
-                    app:layout_constraintTop_toTopOf="@+id/top_button_guideline" />
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/right_scroll_view_guideline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintGuide_percent="0.95" />
 
-                <androidx.constraintlayout.widget.Guideline
-                    android:id="@+id/right_title_guideline"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    app:layout_constraintGuide_percent="0.88" />
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/left_scroll_view_guideline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintGuide_percent="0.05" />
 
-                <androidx.constraintlayout.widget.Guideline
-                    android:id="@+id/left_title_guideline"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    app:layout_constraintGuide_percent="0.12" />
+            <TextView
+                android:id="@+id/titleTextView"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="@string/title_text"
+                android:textColor="#00BCD4"
+                android:textSize="40sp"
+                app:layout_constraintLeft_toRightOf="@id/left_title_guideline"
+                app:layout_constraintRight_toLeftOf="@+id/right_title_guideline"
+                app:layout_constraintTop_toTopOf="@+id/top_button_guideline" />
+
+            <androidx.core.widget.NestedScrollView
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                app:layout_constraintBottom_toBottomOf="@id/infoOverlay"
+                app:layout_constraintLeft_toRightOf="@id/left_scroll_view_guideline"
+                app:layout_constraintRight_toLeftOf="@+id/right_scroll_view_guideline"
+                app:layout_constraintTop_toBottomOf="@+id/titleTextView">
 
                 <TextView
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:text="@string/title_text"
-                    android:textSize="40sp"
-                    app:layout_constraintLeft_toRightOf="@id/left_title_guideline"
-                    app:layout_constraintRight_toLeftOf="@+id/right_title_guideline"
-                    app:layout_constraintTop_toTopOf="@+id/top_button_guideline" />
+                    android:text="@string/content_text"
+                    android:textSize="30sp" />
 
 
-            </androidx.constraintlayout.widget.ConstraintLayout>
+            </androidx.core.widget.NestedScrollView>
 
-        </androidx.core.widget.NestedScrollView>
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+
 
 
 
