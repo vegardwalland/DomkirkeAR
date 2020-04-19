@@ -1,12 +1,11 @@
 <resources>
     <string name="app_name">DomkirkeAR</string>
     <string name="button_to_close_overlay">Button to close overlay</string>
-    <string name="title_text">This is the title text!</string>
-    <string name="content_text">THIS is content! lolololololololololololololololololo
-    lolololololololololololololololololololololololololololololololololololololololololololololololololololololo
-    lolololololololololololololololololololololololololololololololololololololololololololololololololololololo
-    lolololololololololololololololololololololololololololololololololololololololololololololololololololololo
-    lolololololololololololololololololololololololololololololololololololololololololololololololololololololo
-    lolololololololololololololololololololololololololololololololololololololololololololololololololololololo
-    lolololololololololololololololololololololololololololololololololololololololololololololololololololololo</string>
+    <string name="title_text">The Curious Hallway</string>
+    <string name="content_text">At Maldron Hotel Smithfield, there exists a secret hallway. A hallway which is accessible
+    through two doors. It might look like any ordinary hallway, but once inside there is no escape.
+    In the middle of the hallway, up a small flight of stairs, a telephone is fastened to the wall.
+    If you were to put the telephone to your ear, the only thing you would hear is
+    \"What the feck dude. You\'re not supposed to go into that hallway. Ugh, I guess I\'ll come let you out\"</string>
+    <string name="photo_description">Description of photo</string>
 </resources>

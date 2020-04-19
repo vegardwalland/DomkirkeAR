@@ -1,18 +1,25 @@
 package eu.wallhack.domkirkear;
 
 import android.annotation.SuppressLint;
+import android.app.ActionBar;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.location.Location;
 import android.location.LocationManager;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 
@@ -54,8 +61,13 @@ public class MainActivity extends AppCompatActivity {
 
     // The layout elements
     private TextView textView;
-    private ConstraintLayout infoOverlay;
     private ImageButton closeOverlayBtn;
+    private ConstraintLayout outerConstraintLayout;
+    private TextView titleText;
+    private TextView contentText;
+    private ImageView contentImage;
+
+    private AlertDialog noPermissionAlert;
 
     // The system Location Manager
     private LocationManager locationManager;
@@ -63,6 +75,7 @@ public class MainActivity extends AppCompatActivity {
     private LocationScene locationScene;
     private ArSceneView arSceneView;
     private Session session;
+
 
     //Debug text variables
     Boolean createStartMarker = true;
@@ -74,10 +87,14 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        textView = findViewById(R.id.topView);
-        infoOverlay = findViewById(R.id.infoOverlay);
-        closeOverlayBtn = findViewById(R.id.closeOverlayBtn);
 
+        // Get the different View elements
+        textView = findViewById(R.id.topView);
+        closeOverlayBtn = findViewById(R.id.closeOverlayBtn);
+        outerConstraintLayout = findViewById(R.id.outerConstraintLayout);
+        titleText = findViewById(R.id.titleTextView);
+        contentText = findViewById(R.id.contentTextView);
+        contentImage = findViewById(R.id.contentImageView);
 
 
         random = new Random();
@@ -86,18 +103,26 @@ public class MainActivity extends AppCompatActivity {
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         gpsListener = new LocationListener();
 
-        arSceneView = findViewById(R.id.ar_scene_view);
-        createSession();
-
-        setupAutoFocus();
-
         //Configure button
         closeOverlayBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                infoOverlay.setVisibility(arSceneView.GONE);
+                outerConstraintLayout.setVisibility(arSceneView.GONE);
             }
         });
+
+        //Make popup window close when pressed outside of it.
+        outerConstraintLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                outerConstraintLayout.setVisibility(arSceneView.GONE);
+            }
+        });
+
+        // Make a alert dialog to display if the user has denied permissions before
+        configurePermissionAlert();
+
+
 
 
         CompletableFuture<ModelRenderable> andy = ModelRenderable.builder()
@@ -130,6 +155,94 @@ public class MainActivity extends AppCompatActivity {
                             }
                             return null;
                         });
+
+
+    }
+
+    private Node getAndy() {
+        return getAndy(andyRenderable);
+    }
+
+    private Node getAndy(Renderable renderable) {
+        Node base = new Node();
+        base.setRenderable(renderable);
+        Context c = this;
+        base.setOnTapListener((v, event) -> {
+            int colorValue = random.nextInt(0xFFFFFF) + 0xFF000000;
+            Color color = new Color(colorValue);
+            MaterialFactory.makeOpaqueWithColor(this, color).thenAccept(m -> v.getNode().getRenderable().setMaterial(m));
+            Toast.makeText(
+                    c, "Andy touched. New color is " + Integer.toHexString(colorValue), Toast.LENGTH_LONG)
+                    .show();
+            if(outerConstraintLayout.getVisibility()==arSceneView.GONE) {
+                outerConstraintLayout.setVisibility(arSceneView.VISIBLE);
+            }
+
+        });
+        return base;
+    }
+
+
+    @SuppressLint("MissingPermission")
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+
+        // Check camera & location permission
+        PermissionHelper.askCameraPermission(this, noPermissionAlert);
+        PermissionHelper.askGPSPermission(this, noPermissionAlert);
+
+        if(PermissionHelper.getCameraPermission(this) && PermissionHelper.getGPSPermission(this)) {
+
+            if(arSceneView == null) {
+                setupArSceneView();
+            }
+
+            if (locationScene != null) {
+                locationScene.resume();
+            }
+
+            if(arSceneView != null) {
+                try {
+                    arSceneView.resume();
+                } catch (CameraNotAvailableException e) {
+                    // TODO show message that camera not available
+                    e.printStackTrace();
+                    return;
+                }
+            }
+
+            if (arSceneView.getSession() == null) {
+                createSession();
+            }
+
+            // Request location updates from GPS
+            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, gpsListener);
+            // Request location updates from network provider
+            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, gpsListener);
+
+            location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+
+            // TODO Now that we're using Sceneform, can tracking images be set up through Sceneform now?
+            // Configure ARCore session to track images
+            Config config = arSceneView.getSession().getConfig();
+            AugmentedImageDatabase imageDatabase = imageTracking.createImageDatabase(getApplicationContext(), session);
+            if (imageDatabase != null) {
+                config.setAugmentedImageDatabase(imageDatabase);
+            }
+            arSceneView.getSession().configure(config);
+
+            arSceneView.getScene().addOnUpdateListener(this::onUpdateFrame);
+        } else {
+            //finish();
+        }
+    }
+
+    private void setupArSceneView() {
+        arSceneView = findViewById(R.id.ar_scene_view);
+        createSession();
+        setupAutoFocus();
 
         arSceneView.
                 getScene().
@@ -166,74 +279,6 @@ public class MainActivity extends AppCompatActivity {
                 });
     }
 
-    private Node getAndy() {
-        return getAndy(andyRenderable);
-    }
-
-    private Node getAndy(Renderable renderable) {
-        Node base = new Node();
-        base.setRenderable(renderable);
-        Context c = this;
-        base.setOnTapListener((v, event) -> {
-            int colorValue = random.nextInt(0xFFFFFF) + 0xFF000000;
-            Color color = new Color(colorValue);
-            MaterialFactory.makeOpaqueWithColor(this, color).thenAccept(m -> v.getNode().getRenderable().setMaterial(m));
-            Toast.makeText(
-                    c, "Andy touched. New color is " + Integer.toHexString(colorValue), Toast.LENGTH_LONG)
-                    .show();
-            if(infoOverlay.getVisibility()==arSceneView.GONE) {
-                infoOverlay.setVisibility(arSceneView.VISIBLE);
-            }
-        });
-        return base;
-    }
-
-
-    @SuppressLint("MissingPermission")
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        if (locationScene != null) {
-            locationScene.resume();
-        }
-
-        try {
-            arSceneView.resume();
-        } catch (CameraNotAvailableException ex) {
-            // TODO show message that camera not available
-            finish();
-            return;
-        }
-
-        if (arSceneView.getSession() == null) {
-            createSession();
-        }
-
-        // Check location permission
-        while (!PermissionHelper.getGPSPermission(this)) {
-            PermissionHelper.askGPSPermission(this);
-        }
-
-        // Request location updates from GPS
-        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, gpsListener);
-        // Request location updates from network provider
-        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, gpsListener);
-
-        location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-
-        // TODO Now that we're using Sceneform, can tracking images be set up through Sceneform now?
-        // Configure ARCore session to track images
-        Config config = arSceneView.getSession().getConfig();
-        AugmentedImageDatabase imageDatabase = imageTracking.createImageDatabase(getApplicationContext(), session);
-        if (imageDatabase != null) {
-            config.setAugmentedImageDatabase(imageDatabase);
-        }
-        arSceneView.getSession().configure(config);
-
-        arSceneView.getScene().addOnUpdateListener(this::onUpdateFrame);
-    }
-
     private void createSession() {
         try {
             session = new Session(this);
@@ -258,6 +303,28 @@ public class MainActivity extends AppCompatActivity {
         session.configure(config);
     }
 
+    private void configurePermissionAlert() {
+        noPermissionAlert = PermissionHelper.setupNoPermissionAlert(this);
+
+        noPermissionAlert.setButton(DialogInterface.BUTTON_NEUTRAL, "Endre tillatelser", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                Uri uri = Uri.fromParts("package", getPackageName(), null);
+                intent.setData(uri);
+                startActivity(intent);
+            }
+        });
+        noPermissionAlert.setButton(DialogInterface.BUTTON_NEGATIVE, "Avslutt", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                dialog.cancel();
+                finish();
+            }
+        });
+    }
+
+
     @SuppressLint("MissingPermission")
     private void onUpdateFrame(FrameTime frameTime) {
         Frame frame = arSceneView.getArFrame();
@@ -277,7 +344,7 @@ public class MainActivity extends AppCompatActivity {
                 anchorNodePosition = marker.anchorNode.getLocalPosition();
                 distanceInAR = marker.anchorNode.getDistanceInAR();
             }
-            if (location.hasAccuracy() && createStartMarker) {
+            if (location != null && location.hasAccuracy() && createStartMarker) {
                 locationScene.mLocationMarkers.add(
                         new LocationMarker(
                                 location.getLongitude(), location.getLatitude(),
@@ -319,13 +386,18 @@ public class MainActivity extends AppCompatActivity {
         if (locationScene != null) {
             locationScene.pause();
         }
-        arSceneView.pause();
+        if (arSceneView != null) {
+            arSceneView.pause();
+        }
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        arSceneView.destroy();
+        noPermissionAlert.dismiss();
+        if (arSceneView != null) {
+            arSceneView.destroy();
+        }
     }
 
 }
