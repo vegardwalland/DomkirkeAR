@@ -234,9 +234,9 @@ public class MainActivity extends AppCompatActivity {
             arSceneView.getSession().configure(config);
 
             arSceneView.getScene().addOnUpdateListener(this::onUpdateFrame);
-        } else {
-            //finish();
         }
+        // If the app has no permission to access GPS or camera, none of the processes needed can be initialised.
+        // The app will then just show an AlertDialog which informs the user that these permissions are needed
     }
 
     private void setupArSceneView() {
