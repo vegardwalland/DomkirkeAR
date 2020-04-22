@@ -63,8 +63,6 @@ public class PermissionHelper {
         ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, GPS_REQUEST_CODE);
     }
 
-
-
     public static AlertDialog setupNoPermissionAlert(Context context) {
         AlertDialog.Builder builder1 = new AlertDialog.Builder(context);
         builder1.setMessage("Appen trenger tilgang til kamera og GPS for å fungere");

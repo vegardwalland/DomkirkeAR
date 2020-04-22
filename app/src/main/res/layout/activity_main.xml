@@ -29,6 +29,24 @@
         android:textStyle="bold" />
 
 
+    <Button
+        android:id="@+id/miscButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="137dp"
+        android:text='"Misc"' />
+
+    <Button
+        android:id="@+id/nullProcessCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="47dp"
+        android:text='"Null Process Count"' />
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/outerConstraintLayout"
         android:layout_width="match_parent"
@@ -166,8 +184,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_centerHorizontal="true"
-                        android:contentDescription="@string/photo_description"
-                        android:src="@drawable/haakon_i_trappa" />
+                        android:contentDescription="@string/photo_description"/>
 
                     <TextView
                         android:id="@+id/contentTextView"
@@ -180,7 +197,7 @@
                         android:layout_below="@id/contentImageView"/>
 
                 </RelativeLayout>
-
+t
 
             </androidx.core.widget.NestedScrollView>
 

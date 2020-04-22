@@ -1,7 +1,6 @@
 package eu.wallhack.domkirkear;
 
 import android.annotation.SuppressLint;
-import android.app.ActionBar;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -15,15 +14,12 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 
-import com.google.ar.core.AugmentedImageDatabase;
 import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.Session;
@@ -37,18 +33,18 @@ import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.FrameTime;
 import com.google.ar.sceneform.Node;
 import com.google.ar.sceneform.math.Vector3;
-import com.google.ar.sceneform.rendering.Color;
-import com.google.ar.sceneform.rendering.Material;
-import com.google.ar.sceneform.rendering.MaterialFactory;
-import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.rendering.Renderable;
+import com.google.ar.sceneform.rendering.ViewRenderable;
+import com.google.ar.sceneform.ux.FootprintSelectionVisualizer;
+import com.google.ar.sceneform.ux.TransformableNode;
+import com.google.ar.sceneform.ux.TransformationSystem;
 
-import java.util.Random;
+import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import eu.wallhack.domkirkear.common.PermissionHelper;
-import eu.wallhack.domkirkear.common.imageTracking;
+import eu.wallhack.domkirkear.common.RealWorldLocation;
 import eu.wallhack.domkirkear.listeners.LocationListener;
 import uk.co.appoly.arcorelocation.LocationMarker;
 import uk.co.appoly.arcorelocation.LocationScene;
@@ -57,7 +53,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
-    private ModelRenderable andyRenderable;
+    private ViewRenderable nodeLayoutRenderable;
 
     // The layout elements
     private TextView textView;
@@ -67,6 +63,9 @@ public class MainActivity extends AppCompatActivity {
     private TextView contentText;
     private ImageView contentImage;
 
+    private Button nullProcessCountButton;
+    private Button miscButton;
+
     private AlertDialog noPermissionAlert;
 
     // The system Location Manager
@@ -75,39 +74,59 @@ public class MainActivity extends AppCompatActivity {
     private LocationScene locationScene;
     private ArSceneView arSceneView;
     private Session session;
+    private int ONLY_RENDER_NODES_WITHIN = 20; // Inside how many meters around the user the nodes should be rendered
 
+
+    private double previousLongitude;
+    private double previousLatitude;
+    private boolean locationNodesCreated = false;
+
+    private ArrayList<RealWorldLocation> realWorldLocationArray = new ArrayList<>();
 
     //Debug text variables
-    Boolean createStartMarker = true;
     Location location;
-    private boolean firstAndyCreated = false;
-    private Random random;
+    private int timesProcessed = 0;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Get the different View elements
-        textView = findViewById(R.id.topView);
-        closeOverlayBtn = findViewById(R.id.closeOverlayBtn);
-        outerConstraintLayout = findViewById(R.id.outerConstraintLayout);
-        titleText = findViewById(R.id.titleTextView);
-        contentText = findViewById(R.id.contentTextView);
-        contentImage = findViewById(R.id.contentImageView);
+        // Get the different View elements and assign them to global variables
+        assignViews();
 
+        // TODO REMOVE TESTING BUTTONS
+        nullProcessCountButton = findViewById(R.id.nullProcessCount);
 
-        random = new Random();
+        nullProcessCountButton.setOnClickListener(new Button.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                timesProcessed = 0;
+            }
+        });
+
+        miscButton = findViewById(R.id.miscButton);
+
+        miscButton.setOnClickListener(new Button.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                locationScene.clearMarkers();
+                locationNodesCreated = false;
+
+                }
+        });
 
         // Set up GPS
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         gpsListener = new LocationListener();
 
-        //Configure button
+        //Configure button to close popup window
         closeOverlayBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                outerConstraintLayout.setVisibility(arSceneView.GONE);
+                outerConstraintLayout.setVisibility(View.GONE);
             }
         });
 
@@ -115,22 +134,20 @@ public class MainActivity extends AppCompatActivity {
         outerConstraintLayout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                outerConstraintLayout.setVisibility(arSceneView.GONE);
+                outerConstraintLayout.setVisibility(View.GONE);
             }
         });
 
         // Make a alert dialog to display if the user has denied permissions before
         configurePermissionAlert();
 
-
-
-
-        CompletableFuture<ModelRenderable> andy = ModelRenderable.builder()
-                .setSource(this, R.raw.andy)
+        // Build a renderable from a 2D View.
+        CompletableFuture<ViewRenderable> nodeLayout =
+                ViewRenderable.builder()
+                .setView(this, R.layout.node_layout)
                 .build();
 
-
-        CompletableFuture.allOf(andy)
+        CompletableFuture.allOf(nodeLayout)
                 .handle(
                         (notUsed, throwable) ->
                         {
@@ -140,15 +157,7 @@ public class MainActivity extends AppCompatActivity {
                             }
 
                             try {
-                                andyRenderable = andy.get();
-
-                                // Make andyRenderable red
-                                CompletableFuture<Material> redAndyMaterial =
-                                        MaterialFactory.makeOpaqueWithColor(this, new Color(android.graphics.Color.RED));
-
-                                redAndyMaterial.thenAccept(material -> {
-                                    andyRenderable.setMaterial(material);
-                                });
+                                nodeLayoutRenderable = nodeLayout.get();
 
                             } catch (InterruptedException | ExecutionException e) {
                                 e.printStackTrace();
@@ -156,43 +165,36 @@ public class MainActivity extends AppCompatActivity {
                             return null;
                         });
 
-
     }
 
-    private Node getAndy() {
-        return getAndy(andyRenderable);
-    }
 
-    private Node getAndy(Renderable renderable) {
-        Node base = new Node();
-        base.setRenderable(renderable);
-        Context c = this;
-        base.setOnTapListener((v, event) -> {
-            int colorValue = random.nextInt(0xFFFFFF) + 0xFF000000;
-            Color color = new Color(colorValue);
-            MaterialFactory.makeOpaqueWithColor(this, color).thenAccept(m -> v.getNode().getRenderable().setMaterial(m));
-            Toast.makeText(
-                    c, "Andy touched. New color is " + Integer.toHexString(colorValue), Toast.LENGTH_LONG)
-                    .show();
-            if(outerConstraintLayout.getVisibility()==arSceneView.GONE) {
-                outerConstraintLayout.setVisibility(arSceneView.VISIBLE);
-            }
-
-        });
-        return base;
-    }
 
 
     @SuppressLint("MissingPermission")
     @Override
     protected void onResume() {
         super.onResume();
+        RealWorldLocation locPoint1 = new RealWorldLocation("Eskilds hus", "Huset",58.946198, 5.699256);
+        RealWorldLocation locPoint2 = new RealWorldLocation("Sattelitten barnehage", "Description", 58.946662, 5.700832);
+        RealWorldLocation locPoint3 = new RealWorldLocation("Mobiltårnet", "Description",58.954914, 5.699814);
+        RealWorldLocation locPoint4 = new RealWorldLocation("Plutoveien 1", "Description",58.946775, 5.704626);
+
+
+        realWorldLocationArray.add(locPoint1);
+        realWorldLocationArray.add(locPoint2);
+        realWorldLocationArray.add(locPoint3);
+        realWorldLocationArray.add(locPoint4);
+
+        // Set previous longitude and latitude to 0 to force a node refresh
+        previousLongitude = 0;
+        previousLatitude = 0;
 
 
         // Check camera & location permission
         PermissionHelper.askCameraPermission(this, noPermissionAlert);
         PermissionHelper.askGPSPermission(this, noPermissionAlert);
 
+        //Setup everything if permissions are granted
         if(PermissionHelper.getCameraPermission(this) && PermissionHelper.getGPSPermission(this)) {
 
             if(arSceneView == null) {
@@ -224,19 +226,106 @@ public class MainActivity extends AppCompatActivity {
 
             location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 
-            // TODO Now that we're using Sceneform, can tracking images be set up through Sceneform now?
-            // Configure ARCore session to track images
-            Config config = arSceneView.getSession().getConfig();
-            AugmentedImageDatabase imageDatabase = imageTracking.createImageDatabase(getApplicationContext(), session);
-            if (imageDatabase != null) {
-                config.setAugmentedImageDatabase(imageDatabase);
-            }
-            arSceneView.getSession().configure(config);
-
             arSceneView.getScene().addOnUpdateListener(this::onUpdateFrame);
         }
         // If the app has no permission to access GPS or camera, none of the processes needed can be initialised.
         // The app will then just show an AlertDialog which informs the user that these permissions are needed
+    }
+
+
+
+    @SuppressLint("MissingPermission")
+    private void onUpdateFrame(FrameTime frameTime) {
+        Frame frame = arSceneView.getArFrame();
+
+        if (location != null && location.hasAccuracy()) {
+            if(checkMovement(30)) {
+                previousLongitude = location.getLongitude();
+                previousLatitude = location.getLatitude();
+                locationScene.clearMarkers();
+                locationNodesCreated = false;
+            }
+        }
+
+
+        double latitude = 0;
+        double longitude = 0;
+        int noOfMarkers = 0;
+        double distanceInAR = 0;
+        Vector3 anchorNodePosition = Vector3.zero();
+        Vector3 markerNodePosition = Vector3.zero();
+        for (LocationMarker marker : locationScene.mLocationMarkers) {
+            noOfMarkers = locationScene.mLocationMarkers.size();
+            latitude = marker.latitude;
+            longitude = marker.longitude;
+            if (marker.anchorNode != null) {
+                marker.anchorNode.setLocalPosition(Vector3.zero());
+                anchorNodePosition = marker.anchorNode.getLocalPosition();
+                distanceInAR = marker.anchorNode.getDistanceInAR();
+            }
+
+            if (marker.node.isActive()) {
+                marker.node.setLocalPosition(Vector3.zero());
+                markerNodePosition = marker.node.getLocalPosition();
+            }
+        }
+
+        @SuppressLint("DefaultLocale") String debugText = String.format("Our pos %s\n" +
+                        "No of nodes: %d\n" +
+                        "Marker latitude: %f\n" +
+                        "Marker longitude: %f\n" +
+                        "Number of markers: %d\n" +
+                        "Distance in AR: %f\n" +
+                        "Anchor position: %s\n" +
+                        "Node position: %s\n" +
+                        "timesProcessed: %d\n",
+                arSceneView.getScene().getCamera().getLocalPosition(),
+                arSceneView.getScene().getChildren().size(),
+                latitude,
+                longitude,
+                noOfMarkers,
+                distanceInAR,
+                anchorNodePosition,
+                markerNodePosition,
+                timesProcessed);
+        textView.setText(debugText);
+
+
+
+        if (locationScene != null) {
+            locationScene.processFrame(frame);
+            // ArCore Location creates new node each time it updates the location of its locationMarkers
+            // By checking if the children of the sceneview scene is bigger than the amount of locationMarkers plus camera and sun node
+            // We can delete the surplus unused nodes
+
+            if(arSceneView.getScene().getChildren().size() != locationScene.mLocationMarkers.size()+2) {
+                for (int i = arSceneView.getScene().getChildren().size() - locationScene.mLocationMarkers.size() - 1; i > 1; i--) {
+                    Node node = arSceneView.getScene().getChildren().get(i);
+                    arSceneView.getScene().removeChild(node);
+                    // TODO Kan sjekke om det har anchor istedenfor å bruke antall noder.
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (locationScene != null) {
+            locationScene.pause();
+        }
+        if (arSceneView != null) {
+            arSceneView.pause();
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        noPermissionAlert.dismiss();
+        if (arSceneView != null) {
+            arSceneView.destroy();
+        }
     }
 
     private void setupArSceneView() {
@@ -262,22 +351,31 @@ public class MainActivity extends AppCompatActivity {
                         return;
                     }
 
-                    if (locationScene != null) {
-                        locationScene.processFrame(frame);
+                    if (nodeLayoutRenderable != null && !locationNodesCreated) {
+                        createLocationNodes(realWorldLocationArray);
+
                     }
 
-                    if (andyRenderable != null && !firstAndyCreated) {
-                        Node firstAndy = getAndy(andyRenderable.makeCopy());
-                        MaterialFactory.makeOpaqueWithColor(this, new Color(android.graphics.Color.BLUE)).thenAccept(firstAndy.getRenderable()::setMaterial);
-                        // Adding a simple location marker of a 3D model
-                        locationScene.mLocationMarkers.add(
-                                new LocationMarker(
-                                        5.691703, 58.938292,
-                                        firstAndy));
-                        firstAndyCreated = true;
-                    }
                 });
     }
+
+    private boolean checkMovement(double meters) {
+        meters = meters * 0.000001; // Turn meters into meters in gps.
+        if(getMovement(meters, location.getLatitude(), previousLatitude)
+                || getMovement(meters, location.getLongitude(), previousLongitude)) {
+            return true;
+        }
+        return false;
+    }
+
+        //Return true if the device has moved more than the supplied meters in latitude or longitude
+    private boolean getMovement(double meters, double currentPos, double previousPos) {
+        if(currentPos > (previousPos + meters) || currentPos < (previousPos - meters)) {
+            return true;
+        }
+        return false;
+    }
+
 
     private void createSession() {
         try {
@@ -288,6 +386,7 @@ public class MainActivity extends AppCompatActivity {
             finish();
         }
     }
+
 
     private void setupAutoFocus() {
         Config config = new Config(session);
@@ -324,80 +423,50 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-
-    @SuppressLint("MissingPermission")
-    private void onUpdateFrame(FrameTime frameTime) {
-        Frame frame = arSceneView.getArFrame();
-
-        double latitude = 0;
-        double longitude = 0;
-        int noOfMarkers = 0;
-        double distanceInAR = 0;
-        Vector3 anchorNodePosition = Vector3.zero();
-        Vector3 markerNodePosition = Vector3.zero();
-        for (LocationMarker marker : locationScene.mLocationMarkers) {
-            noOfMarkers = locationScene.mLocationMarkers.size();
-            latitude = marker.latitude;
-            longitude = marker.longitude;
-            if (marker.anchorNode != null) {
-                marker.anchorNode.setLocalPosition(Vector3.zero());
-                anchorNodePosition = marker.anchorNode.getLocalPosition();
-                distanceInAR = marker.anchorNode.getDistanceInAR();
-            }
-            if (location != null && location.hasAccuracy() && createStartMarker) {
-                locationScene.mLocationMarkers.add(
-                        new LocationMarker(
-                                location.getLongitude(), location.getLatitude(),
-                                getAndy()));
-                createStartMarker = false;
-            }
-            if (marker.node.isActive()) {
-                marker.node.setLocalPosition(Vector3.zero());
-                markerNodePosition = marker.node.getLocalPosition();
-            }
-        }
-
-        String debugText = String.format("Our pos %s\n" +
-                        "No of nodes: %d\n" +
-                        "Marker latitude: %f\n" +
-                        "Marker longitude: %f\n" +
-                        "Number of markers: %d\n" +
-                        "Distance in AR: %f\n" +
-                        "Anchor position: %s\n" +
-                        "Node position: %s\n",
-                arSceneView.getScene().getCamera().getLocalPosition(),
-                arSceneView.getScene().getChildren().size(),
-                latitude,
-                longitude,
-                noOfMarkers,
-                distanceInAR,
-                anchorNodePosition,
-                markerNodePosition);
-        textView.setText(debugText);
-
-        if (locationScene != null) {
-            locationScene.processFrame(frame);
-        }
+    private Node getLocationNode(Renderable renderable) {
+        TransformationSystem transformationSystem=new TransformationSystem(getResources().getDisplayMetrics(),new FootprintSelectionVisualizer());
+        TransformableNode base = new TransformableNode(transformationSystem);
+        base.getScaleController().setMaxScale(40.99f);
+        base.getScaleController().setMinScale(08.98f);
+        base.setRenderable(renderable);
+        return base;
     }
 
-    @Override
-    public void onPause() {
-        super.onPause();
-        if (locationScene != null) {
-            locationScene.pause();
-        }
-        if (arSceneView != null) {
-            arSceneView.pause();
-        }
+    private void createLocationNodes(ArrayList<RealWorldLocation> locations) {
+            for(RealWorldLocation location: locations) {
+                ViewRenderable renderable = nodeLayoutRenderable.makeCopy();
+                View renderableView = renderable.getView();
+                TextView nodeTitle = renderableView.findViewById(R.id.nodeTitle);
+                ImageView nodeImage = renderableView.findViewById(R.id.nodeImageView);
+
+
+                Node locationNode = getLocationNode(renderable);
+                locationNode.setOnTapListener((v, event) -> {
+                    if(outerConstraintLayout.getVisibility()== View.GONE) {
+                        outerConstraintLayout.setVisibility(View.VISIBLE);
+                    }
+                    titleText.setText(location.getName());
+                    contentText.setText(location.getDescription());
+                });
+
+                LocationMarker marker = new LocationMarker(
+                        location.getLon(), location.getLat(),
+                        locationNode);
+                marker.setOnlyRenderWhenWithin(ONLY_RENDER_NODES_WITHIN);
+                marker.setScalingMode(LocationMarker.ScalingMode.GRADUAL_TO_MAX_RENDER_DISTANCE);
+
+                // Adding a simple location marker of a 3D model
+                locationScene.mLocationMarkers.add(marker);
+            }
+            locationNodesCreated = true;
     }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        noPermissionAlert.dismiss();
-        if (arSceneView != null) {
-            arSceneView.destroy();
-        }
+    private void assignViews() {
+        textView = findViewById(R.id.topView);
+        closeOverlayBtn = findViewById(R.id.closeOverlayBtn);
+        outerConstraintLayout = findViewById(R.id.outerConstraintLayout);
+        titleText = findViewById(R.id.titleTextView);
+        contentText = findViewById(R.id.contentTextView);
+        contentImage = findViewById(R.id.contentImageView);
     }
-
 }
