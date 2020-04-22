@@ -4,7 +4,7 @@ android {
     compileSdkVersion 29
     buildToolsVersion "29.0.2"
     defaultConfig {
-        applicationId "eu.wallhack.domkirkear"
+        applicationId "eu.wallhack.gamlestavangerar"
         // minSdkVersion >= 24 for ARCore and Sceneform
         minSdkVersion 24
         targetSdkVersion 29

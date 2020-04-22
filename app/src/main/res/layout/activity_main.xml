@@ -9,13 +9,13 @@
 
     <com.google.ar.sceneform.ArSceneView
         android:id="@+id/ar_scene_view"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
         android:layout_gravity="top"
-        android:layout_marginStart="1dp"
-        android:layout_marginTop="-1dp" />
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="0dp" />
 
     <TextView
         android:id="@+id/topView"
@@ -197,7 +197,6 @@
                         android:layout_below="@id/contentImageView"/>
 
                 </RelativeLayout>
-t
 
             </androidx.core.widget.NestedScrollView>
 

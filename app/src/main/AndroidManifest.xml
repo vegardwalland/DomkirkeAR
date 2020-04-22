@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="eu.wallhack.domkirkear">
+    package="eu.wallhack.gamlestavangerar">
 
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- Request permission to use GPS data -->
@@ -18,12 +18,12 @@
 
     <application
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/launcher_icon"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@mipmap/launcher_icon_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MainActivity">
+        <activity android:name="eu.wallhack.gamlestavangerar.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
