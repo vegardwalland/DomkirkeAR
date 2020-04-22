@@ -74,7 +74,10 @@ public class MainActivity extends AppCompatActivity {
     private LocationScene locationScene;
     private ArSceneView arSceneView;
     private Session session;
-    private int ONLY_RENDER_NODES_WITHIN = 20; // Inside how many meters around the user the nodes should be rendered
+    // Inside how many meters around the user the nodes should be rendered
+    private int ONLY_RENDER_NODES_WITHIN = 30;
+    // How many meters the user can move before a forced node rerendering happens. Set to -1 to disable.
+    private int FORCE_UPDATE_NODES_AFTER_METERS = 20;
 
 
     private double previousLongitude;
@@ -239,7 +242,7 @@ public class MainActivity extends AppCompatActivity {
         Frame frame = arSceneView.getArFrame();
 
         if (location != null && location.hasAccuracy()) {
-            if(checkMovement(30)) {
+            if(checkMovement(FORCE_UPDATE_NODES_AFTER_METERS)) {
                 previousLongitude = location.getLongitude();
                 previousLatitude = location.getLatitude();
                 locationScene.clearMarkers();
@@ -360,6 +363,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private boolean checkMovement(double meters) {
+        if(meters == -1) {
+            return false;
+        }
         meters = meters * 0.000001; // Turn meters into meters in gps.
         if(getMovement(meters, location.getLatitude(), previousLatitude)
                 || getMovement(meters, location.getLongitude(), previousLongitude)) {
