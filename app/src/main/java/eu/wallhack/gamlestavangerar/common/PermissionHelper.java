@@ -65,7 +65,7 @@ public class PermissionHelper {
 
     public static AlertDialog setupNoPermissionAlert(Context context) {
         AlertDialog.Builder builder1 = new AlertDialog.Builder(context);
-        builder1.setMessage("Appen trenger tilgang til kamera og GPS for å fungere");
+        builder1.setMessage("The app needs access to camera and position to function");
 
        return builder1.create();
     }

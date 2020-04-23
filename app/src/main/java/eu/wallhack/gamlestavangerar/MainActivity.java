@@ -53,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
+    // The renderable used for the nodes in AR
     private ViewRenderable nodeLayoutRenderable;
 
     // The layout elements
@@ -66,22 +67,26 @@ public class MainActivity extends AppCompatActivity {
     private Button nullProcessCountButton;
     private Button miscButton;
 
+    // Alert dialog to show when permissions has been denied
     private AlertDialog noPermissionAlert;
 
     // The system Location Manager
     private LocationManager locationManager;
     private LocationListener gpsListener;
+
+    // ARCore and ARCoreLocation
     private LocationScene locationScene;
     private ArSceneView arSceneView;
     private Session session;
-    // Inside how many meters around the user the nodes should be rendered
-    private int ONLY_RENDER_NODES_WITHIN = 30;
+
+    // Inside how many meters around the user the nodes should be rendered. Set to -1 to set to max
+    private int ONLY_RENDER_NODES_WITHIN = -1;
+
     // How many meters the user can move before a forced node rerendering happens. Set to -1 to disable.
     private int FORCE_UPDATE_NODES_AFTER_METERS = 20;
-
-
     private double previousLongitude;
     private double previousLatitude;
+    // Are to be created
     private boolean locationNodesCreated = false;
 
     private ArrayList<RealWorldLocation> realWorldLocationArray = new ArrayList<>();
@@ -99,8 +104,11 @@ public class MainActivity extends AppCompatActivity {
         // Get the different View elements and assign them to global variables
         assignViews();
 
+        textView.setVisibility(View.GONE);
+
         // TODO REMOVE TESTING BUTTONS
         nullProcessCountButton = findViewById(R.id.nullProcessCount);
+        nullProcessCountButton.setVisibility(View.GONE);
 
         nullProcessCountButton.setOnClickListener(new Button.OnClickListener() {
             @Override
@@ -110,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         miscButton = findViewById(R.id.miscButton);
-
+        miscButton.setVisibility(View.GONE);
         miscButton.setOnClickListener(new Button.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -125,21 +133,8 @@ public class MainActivity extends AppCompatActivity {
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
         gpsListener = new LocationListener();
 
-        //Configure button to close popup window
-        closeOverlayBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                outerConstraintLayout.setVisibility(View.GONE);
-            }
-        });
-
-        //Make popup window close when pressed outside of it.
-        outerConstraintLayout.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                outerConstraintLayout.setVisibility(View.GONE);
-            }
-        });
+        //Configure button to close popup window and make popup window close when pressed outside of it.
+        setupInformationOverlayFunctionality();
 
         // Make a alert dialog to display if the user has denied permissions before
         configurePermissionAlert();
@@ -161,12 +156,52 @@ public class MainActivity extends AppCompatActivity {
 
                             try {
                                 nodeLayoutRenderable = nodeLayout.get();
+                                View renderableView = nodeLayoutRenderable.getView();
+                                ImageView nodeImage = renderableView.findViewById(R.id.nodeImageView);
+                                nodeImage.setImageResource(R.mipmap.launcher_icon);
 
                             } catch (InterruptedException | ExecutionException e) {
                                 e.printStackTrace();
                             }
                             return null;
                         });
+
+        RealWorldLocation locPoint1 = new RealWorldLocation("Eskilds hus", "Huset",58.946198, 5.699256);
+        RealWorldLocation locPoint2 = new RealWorldLocation("Sattelitten barnehage", "Description", 58.946662, 5.700832);
+        RealWorldLocation locPoint3 = new RealWorldLocation("Mobiltårnet", "Description",58.954914, 5.699814);
+        RealWorldLocation locPoint4 = new RealWorldLocation("Plutoveien 1", "Description",58.946775, 5.704626);
+        /*
+        RealWorldLocation locPoint5 = new RealWorldLocation("Solfagerstien 24", "Description",58.946411, 5.699221);
+        RealWorldLocation locPoint6 = new RealWorldLocation("Solfagerstien 20", "Description",58.946407, 5.698969);
+        RealWorldLocation locPoint7 = new RealWorldLocation("Solfagerstien 16", "Description",58.946396, 5.698695);
+        RealWorldLocation locPoint8 = new RealWorldLocation("Solfagerstien 12", "Description",58.946377, 5.698466);
+        RealWorldLocation locPoint9 = new RealWorldLocation("Solfagerstien 17", "Description",58.946203, 5.698883);
+        RealWorldLocation locPoint10 = new RealWorldLocation("Solfagerstien 13", "Description",58.946181, 5.698612);
+        RealWorldLocation locPoint11= new RealWorldLocation("Solfagerstien 9", "Description",58.946173, 5.698329);
+        RealWorldLocation locPoint12 = new RealWorldLocation("Jupiterveien 10", "Description",58.946670, 5.704123);
+        RealWorldLocation locPoint13 = new RealWorldLocation("Jupiterveien 12", "Description",58.946563, 5.703635);
+        RealWorldLocation locPoint14 = new RealWorldLocation("Jupiterveien 14", "Description",58.946385, 5.703243);
+        RealWorldLocation locPoint15= new RealWorldLocation("Plutoveien 50", "Description",58.946317, 5.702717);
+*/
+
+        realWorldLocationArray.add(locPoint1);
+        realWorldLocationArray.add(locPoint2);
+        realWorldLocationArray.add(locPoint3);
+        realWorldLocationArray.add(locPoint4);
+        /*
+        realWorldLocationArray.add(locPoint5);
+        realWorldLocationArray.add(locPoint6);
+        realWorldLocationArray.add(locPoint7);
+        realWorldLocationArray.add(locPoint8);
+        realWorldLocationArray.add(locPoint9);
+        realWorldLocationArray.add(locPoint10);
+        realWorldLocationArray.add(locPoint11);
+        realWorldLocationArray.add(locPoint12);
+        realWorldLocationArray.add(locPoint13);
+        realWorldLocationArray.add(locPoint14);
+        realWorldLocationArray.add(locPoint15);
+
+         */
 
     }
 
@@ -177,16 +212,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        RealWorldLocation locPoint1 = new RealWorldLocation("Eskilds hus", "Huset",58.946198, 5.699256);
-        RealWorldLocation locPoint2 = new RealWorldLocation("Sattelitten barnehage", "Description", 58.946662, 5.700832);
-        RealWorldLocation locPoint3 = new RealWorldLocation("Mobiltårnet", "Description",58.954914, 5.699814);
-        RealWorldLocation locPoint4 = new RealWorldLocation("Plutoveien 1", "Description",58.946775, 5.704626);
 
-
-        realWorldLocationArray.add(locPoint1);
-        realWorldLocationArray.add(locPoint2);
-        realWorldLocationArray.add(locPoint3);
-        realWorldLocationArray.add(locPoint4);
 
         // Set previous longitude and latitude to 0 to force a node refresh
         previousLongitude = 0;
@@ -204,10 +230,6 @@ public class MainActivity extends AppCompatActivity {
                 setupArSceneView();
             }
 
-            if (locationScene != null) {
-                locationScene.resume();
-            }
-
             if(arSceneView != null) {
                 try {
                     arSceneView.resume();
@@ -216,6 +238,10 @@ public class MainActivity extends AppCompatActivity {
                     e.printStackTrace();
                     return;
                 }
+            }
+
+            if (locationScene != null) {
+                locationScene.resume();
             }
 
             if (arSceneView.getSession() == null) {
@@ -239,17 +265,6 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("MissingPermission")
     private void onUpdateFrame(FrameTime frameTime) {
-        Frame frame = arSceneView.getArFrame();
-
-        if (location != null && location.hasAccuracy()) {
-            if(checkMovement(FORCE_UPDATE_NODES_AFTER_METERS)) {
-                previousLongitude = location.getLongitude();
-                previousLatitude = location.getLatitude();
-                locationScene.clearMarkers();
-                locationNodesCreated = false;
-            }
-        }
-
 
         double latitude = 0;
         double longitude = 0;
@@ -293,22 +308,6 @@ public class MainActivity extends AppCompatActivity {
                 timesProcessed);
         textView.setText(debugText);
 
-
-
-        if (locationScene != null) {
-            locationScene.processFrame(frame);
-            // ArCore Location creates new node each time it updates the location of its locationMarkers
-            // By checking if the children of the sceneview scene is bigger than the amount of locationMarkers plus camera and sun node
-            // We can delete the surplus unused nodes
-
-            if(arSceneView.getScene().getChildren().size() != locationScene.mLocationMarkers.size()+2) {
-                for (int i = arSceneView.getScene().getChildren().size() - locationScene.mLocationMarkers.size() - 1; i > 1; i--) {
-                    Node node = arSceneView.getScene().getChildren().get(i);
-                    arSceneView.getScene().removeChild(node);
-                    // TODO Kan sjekke om det har anchor istedenfor å bruke antall noder.
-                }
-            }
-        }
     }
 
     @Override
@@ -354,21 +353,50 @@ public class MainActivity extends AppCompatActivity {
                         return;
                     }
 
+                    // Check if a forced node update should occur
+                    if (location != null && location.hasAccuracy()) {
+                        if(checkMovement(FORCE_UPDATE_NODES_AFTER_METERS)) {
+                            locationScene.clearMarkers();
+                            locationNodesCreated = false;
+                        }
+                    }
+
+                    // Create the nodes that are to be rendered in the app if the renderable has been created
+                    // and if they have not been created before
                     if (nodeLayoutRenderable != null && !locationNodesCreated) {
                         createLocationNodes(realWorldLocationArray);
+                    }
 
+
+                    if (locationScene != null) {
+                        locationScene.processFrame(frame);
+
+                        // ArCore Location creates a new node each time it updates the location of its locationMarkers
+                        // By checking if the children of the sceneview scene is bigger than the amount of locationMarkers plus camera and sun node
+                        // We can delete the surplus unused nodes
+                        if(arSceneView.getScene().getChildren().size() != locationScene.mLocationMarkers.size()+2) {
+                            deleteSurplusNodes();
+                        }
                     }
 
                 });
     }
 
-    private boolean checkMovement(double meters) {
-        if(meters == -1) {
-            return false;
+    private void deleteSurplusNodes() {
+        for (int i = arSceneView.getScene().getChildren().size() - locationScene.mLocationMarkers.size() - 1; i > 1; i--) {
+            Node node = arSceneView.getScene().getChildren().get(i);
+            arSceneView.getScene().removeChild(node);
+            // TODO Can check if it has anchor instead of amount of nodes. Worse runtime
         }
-        meters = meters * 0.000001; // Turn meters into meters in gps.
+    }
+
+    private boolean checkMovement(double meters) {
+        if(meters == -1) return false;
+        meters = meters * 0.000001; // Turn meters into meters in latitude or longitude.
         if(getMovement(meters, location.getLatitude(), previousLatitude)
                 || getMovement(meters, location.getLongitude(), previousLongitude)) {
+            previousLongitude = location.getLongitude();
+            previousLatitude = location.getLatitude();
             return true;
         }
         return false;
@@ -411,7 +439,7 @@ public class MainActivity extends AppCompatActivity {
     private void configurePermissionAlert() {
         noPermissionAlert = PermissionHelper.setupNoPermissionAlert(this);
 
-        noPermissionAlert.setButton(DialogInterface.BUTTON_NEUTRAL, "Endre tillatelser", new DialogInterface.OnClickListener() {
+        noPermissionAlert.setButton(DialogInterface.BUTTON_NEUTRAL, "Change Permissions", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
@@ -420,11 +448,29 @@ public class MainActivity extends AppCompatActivity {
                 startActivity(intent);
             }
         });
-        noPermissionAlert.setButton(DialogInterface.BUTTON_NEGATIVE, "Avslutt", new DialogInterface.OnClickListener() {
+        noPermissionAlert.setButton(DialogInterface.BUTTON_NEGATIVE, "Exit", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialog, int which) {
                 dialog.cancel();
                 finish();
+            }
+        });
+    }
+
+    private void setupInformationOverlayFunctionality() {
+        //Configure button to close popup window
+        closeOverlayBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                outerConstraintLayout.setVisibility(View.GONE);
+            }
+        });
+
+        //Make popup window close when pressed outside of it.
+        outerConstraintLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                outerConstraintLayout.setVisibility(View.GONE);
             }
         });
     }
@@ -440,13 +486,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void createLocationNodes(ArrayList<RealWorldLocation> locations) {
             for(RealWorldLocation location: locations) {
-                ViewRenderable renderable = nodeLayoutRenderable.makeCopy();
-                View renderableView = renderable.getView();
-                TextView nodeTitle = renderableView.findViewById(R.id.nodeTitle);
-                ImageView nodeImage = renderableView.findViewById(R.id.nodeImageView);
-
-
-                Node locationNode = getLocationNode(renderable);
+                Node locationNode = getLocationNode(nodeLayoutRenderable);
                 locationNode.setOnTapListener((v, event) -> {
                     if(outerConstraintLayout.getVisibility()== View.GONE) {
                         outerConstraintLayout.setVisibility(View.VISIBLE);
@@ -458,10 +498,12 @@ public class MainActivity extends AppCompatActivity {
                 LocationMarker marker = new LocationMarker(
                         location.getLon(), location.getLat(),
                         locationNode);
-                marker.setOnlyRenderWhenWithin(ONLY_RENDER_NODES_WITHIN);
+                if(ONLY_RENDER_NODES_WITHIN != -1) {
+                    marker.setOnlyRenderWhenWithin(ONLY_RENDER_NODES_WITHIN);
+                }
                 marker.setScalingMode(LocationMarker.ScalingMode.GRADUAL_TO_MAX_RENDER_DISTANCE);
 
-                // Adding a simple location marker of a 3D model
+                // Adding a location marker of a 2D model
                 locationScene.mLocationMarkers.add(marker);
             }
             locationNodesCreated = true;

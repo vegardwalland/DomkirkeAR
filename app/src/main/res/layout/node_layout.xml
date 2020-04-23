@@ -5,16 +5,11 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:alpha="0.93"
-    android:background="#2196F3"
+    android:background="@drawable/layout_bg"
     android:orientation="vertical"
     android:padding="30dp">
 
-    <TextView
-        android:id="@+id/nodeTitle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textColor="#fff"
-        android:textSize="24sp" />
+
 
     <ImageView
         android:id="@+id/nodeImageView"
