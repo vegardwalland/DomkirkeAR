@@ -2,7 +2,6 @@ package eu.wallhack.domkirkear;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.location.Location;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
@@ -31,7 +30,6 @@ import com.google.ar.sceneform.rendering.MaterialFactory;
 import com.google.ar.sceneform.rendering.ModelRenderable;
 import com.google.ar.sceneform.rendering.Renderable;
 
-import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -55,19 +53,14 @@ public class MainActivity extends AppCompatActivity {
     private ArSceneView arSceneView;
     private Session session;
 
-    //Debug text variables
-    Boolean createStartMarker = true;
-    Location location;
-    private boolean firstAndyCreated = false;
-    private Random random;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         textView = findViewById(R.id.topView);
 
-        random = new Random();
+        // Make sure we have a ArSceneView
+        while (arFragment.getArSceneView() == null) ;
 
         // Set up GPS
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
@@ -234,35 +227,21 @@ public class MainActivity extends AppCompatActivity {
         session.configure(config);
     }
 
-    @SuppressLint("MissingPermission")
     private void onUpdateFrame(FrameTime frameTime) {
-        Frame frame = arSceneView.getArFrame();
+        Frame frame = arFragment.getArSceneView().getArFrame();
 
-        double latitude = 0;
-        double longitude = 0;
-        int noOfMarkers = 0;
-        double distanceInAR = 0;
-        Vector3 anchorNodePosition = Vector3.zero();
-        Vector3 markerNodePosition = Vector3.zero();
-        for (LocationMarker marker : locationScene.mLocationMarkers) {
-            noOfMarkers = locationScene.mLocationMarkers.size();
-            latitude = marker.latitude;
-            longitude = marker.longitude;
-            if (marker.anchorNode != null) {
-                marker.anchorNode.setLocalPosition(Vector3.zero());
-                anchorNodePosition = marker.anchorNode.getLocalPosition();
-                distanceInAR = marker.anchorNode.getDistanceInAR();
-            }
-            if (location.hasAccuracy() && createStartMarker) {
-                locationScene.mLocationMarkers.add(
-                        new LocationMarker(
-                                location.getLongitude(), location.getLatitude(),
-                                getAndy()));
-                createStartMarker = false;
-            }
-            if (marker.node.isActive()) {
-                marker.node.setLocalPosition(Vector3.zero());
-                markerNodePosition = marker.node.getLocalPosition();
+        Collection<AugmentedImage> augmentedImages = frame.getUpdatedTrackables(AugmentedImage.class);
+
+        for (AugmentedImage augmentedImage : augmentedImages) {
+            if (augmentedImage.getTrackingState() == TrackingState.TRACKING) {
+
+                if (augmentedImage.getName().contains("qrCode")) {
+                    // here we got that image has been detected
+                    // we will render our 3D asset in center of detected image
+                    renderObject(arFragment,
+                            augmentedImage.createAnchor(augmentedImage.getCenterPose()),
+                            R.raw.andy);
+                }
             }
         }
 
@@ -289,19 +268,29 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    public void onPause() {
-        super.onPause();
-        if (locationScene != null) {
-            locationScene.pause();
-        }
-        arSceneView.pause();
+    private void renderObject(ArFragment fragment, Anchor anchor, int model) {
+        ModelRenderable.builder()
+                .setSource(this, model)
+                .build()
+                .thenAccept(renderable -> addNodeToScene(fragment, anchor, renderable))
+                .exceptionally((throwable -> {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setMessage(throwable.getMessage())
+                            .setTitle("Error!");
+                    AlertDialog dialog = builder.create();
+                    dialog.show();
+                    return null;
+                }));
+
     }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        arSceneView.destroy();
+    private void addNodeToScene(ArFragment fragment, Anchor anchor, ModelRenderable renderable) {
+        AnchorNode anchorNode = new AnchorNode(anchor);
+        TransformableNode node = new TransformableNode(fragment.getTransformationSystem());
+        node.setRenderable(renderable);
+        node.setParent(anchorNode);
+        fragment.getArSceneView().getScene().addChild(anchorNode);
+        node.select();
     }
 
 }
