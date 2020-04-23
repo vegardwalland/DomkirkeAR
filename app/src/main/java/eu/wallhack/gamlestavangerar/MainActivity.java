@@ -86,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
     private int FORCE_UPDATE_NODES_AFTER_METERS = 20;
     private double previousLongitude;
     private double previousLatitude;
-    // Are to be created
+    // Are location nodes to be created
     private boolean locationNodesCreated = false;
 
     private ArrayList<RealWorldLocation> realWorldLocationArray = new ArrayList<>();
