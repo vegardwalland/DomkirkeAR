@@ -31,16 +31,21 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
-    implementation 'com.google.ar:core:1.15.0'
+    implementation 'com.google.ar:core:1.16.0'
     // Obj - a simple Wavefront OBJ file loader
     // https://github.com/javagl/Obj
     implementation 'de.javagl:obj:0.2.1'
-    implementation 'com.google.android.material:material:1.2.0-alpha04'
+    implementation 'com.google.android.material:material:1.2.0-alpha06'
     // Provides ARCore Session and related resources.
-    implementation 'com.google.ar:core:1.15.0'
+    implementation 'com.google.ar:core:1.16.0'
     // Provides ArFragment, and other UX resources.
     implementation 'com.google.ar.sceneform.ux:sceneform-ux:1.15.0'
     implementation 'com.github.appoly:ARCore-Location:1.2'
+
+    implementation 'com.google.code.gson:gson:2.8.6'
+    implementation 'org.javalite:javalite-common:2.3.2-j8'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.6.2'
+    testImplementation "org.mockito:mockito-core:3.3.3"
 }
 
 apply plugin: 'com.google.ar.sceneform.plugin'
