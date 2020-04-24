@@ -374,7 +374,7 @@ public class MainActivity extends AppCompatActivity {
                         // ArCore Location creates a new node each time it updates the location of its locationMarkers
                         // By checking if the children of the sceneview scene is bigger than the amount of locationMarkers plus camera and sun node
                         // We can delete the surplus unused nodes
-                        if(arSceneView.getScene().getChildren().size() != locationScene.mLocationMarkers.size()+2) {
+                        if (arSceneView.getScene().getChildren().size() != locationScene.mLocationMarkers.size()+2) {
                             deleteSurplusNodes();
                         }
                     }
