@@ -393,8 +393,8 @@ public class MainActivity extends AppCompatActivity {
     private boolean checkMovement(double meters) {
         if(meters == -1) return false;
         meters = meters * 0.000001; // Turn meters into meters in latitude or longitude.
-        if(getMovement(meters, location.getLatitude(), previousLatitude)
-                || getMovement(meters, location.getLongitude(), previousLongitude)) {
+        if(hasDeviceMoved(meters, location.getLatitude(), previousLatitude)
+                || hasDeviceMoved(meters, location.getLongitude(), previousLongitude)) {
             previousLongitude = location.getLongitude();
             previousLatitude = location.getLatitude();
             return true;
@@ -403,7 +403,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
         //Return true if the device has moved more than the supplied meters in latitude or longitude
-    private boolean getMovement(double meters, double currentPos, double previousPos) {
+    private boolean hasDeviceMoved(double meters, double currentPos, double previousPos) {
         if(currentPos > (previousPos + meters) || currentPos < (previousPos - meters)) {
             return true;
         }
