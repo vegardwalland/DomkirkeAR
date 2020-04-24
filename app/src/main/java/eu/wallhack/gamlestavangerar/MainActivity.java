@@ -39,12 +39,18 @@ import com.google.ar.sceneform.ux.FootprintSelectionVisualizer;
 import com.google.ar.sceneform.ux.TransformableNode;
 import com.google.ar.sceneform.ux.TransformationSystem;
 
+import org.javalite.http.Get;
+import org.javalite.http.Http;
+
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import eu.wallhack.gamlestavangerar.common.PermissionHelper;
 import eu.wallhack.gamlestavangerar.common.RealWorldLocation;
+import eu.wallhack.gamlestavangerar.items.Item;
+import eu.wallhack.gamlestavangerar.items.ItemFetcher;
 import eu.wallhack.gamlestavangerar.listeners.LocationListener;
 import uk.co.appoly.arcorelocation.LocationMarker;
 import uk.co.appoly.arcorelocation.LocationScene;
@@ -89,7 +95,7 @@ public class MainActivity extends AppCompatActivity {
     // Are location nodes to be created
     private boolean locationNodesCreated = false;
 
-    private ArrayList<RealWorldLocation> realWorldLocationArray = new ArrayList<>();
+    private Collection<Item> locations;
 
     //Debug text variables
     Location location;
@@ -166,42 +172,9 @@ public class MainActivity extends AppCompatActivity {
                             return null;
                         });
 
-        RealWorldLocation locPoint1 = new RealWorldLocation("Eskilds hus", "Huset",58.946198, 5.699256);
-        RealWorldLocation locPoint2 = new RealWorldLocation("Sattelitten barnehage", "Description", 58.946662, 5.700832);
-        RealWorldLocation locPoint3 = new RealWorldLocation("Mobiltårnet", "Description",58.954914, 5.699814);
-        RealWorldLocation locPoint4 = new RealWorldLocation("Plutoveien 1", "Description",58.946775, 5.704626);
-        /*
-        RealWorldLocation locPoint5 = new RealWorldLocation("Solfagerstien 24", "Description",58.946411, 5.699221);
-        RealWorldLocation locPoint6 = new RealWorldLocation("Solfagerstien 20", "Description",58.946407, 5.698969);
-        RealWorldLocation locPoint7 = new RealWorldLocation("Solfagerstien 16", "Description",58.946396, 5.698695);
-        RealWorldLocation locPoint8 = new RealWorldLocation("Solfagerstien 12", "Description",58.946377, 5.698466);
-        RealWorldLocation locPoint9 = new RealWorldLocation("Solfagerstien 17", "Description",58.946203, 5.698883);
-        RealWorldLocation locPoint10 = new RealWorldLocation("Solfagerstien 13", "Description",58.946181, 5.698612);
-        RealWorldLocation locPoint11= new RealWorldLocation("Solfagerstien 9", "Description",58.946173, 5.698329);
-        RealWorldLocation locPoint12 = new RealWorldLocation("Jupiterveien 10", "Description",58.946670, 5.704123);
-        RealWorldLocation locPoint13 = new RealWorldLocation("Jupiterveien 12", "Description",58.946563, 5.703635);
-        RealWorldLocation locPoint14 = new RealWorldLocation("Jupiterveien 14", "Description",58.946385, 5.703243);
-        RealWorldLocation locPoint15= new RealWorldLocation("Plutoveien 50", "Description",58.946317, 5.702717);
-*/
 
-        realWorldLocationArray.add(locPoint1);
-        realWorldLocationArray.add(locPoint2);
-        realWorldLocationArray.add(locPoint3);
-        realWorldLocationArray.add(locPoint4);
-        /*
-        realWorldLocationArray.add(locPoint5);
-        realWorldLocationArray.add(locPoint6);
-        realWorldLocationArray.add(locPoint7);
-        realWorldLocationArray.add(locPoint8);
-        realWorldLocationArray.add(locPoint9);
-        realWorldLocationArray.add(locPoint10);
-        realWorldLocationArray.add(locPoint11);
-        realWorldLocationArray.add(locPoint12);
-        realWorldLocationArray.add(locPoint13);
-        realWorldLocationArray.add(locPoint14);
-        realWorldLocationArray.add(locPoint15);
 
-         */
+
 
     }
 
@@ -225,6 +198,9 @@ public class MainActivity extends AppCompatActivity {
 
         //Setup everything if permissions are granted
         if(PermissionHelper.getCameraPermission(this) && PermissionHelper.getGPSPermission(this)) {
+
+            ItemFetcher itemFetcher = ItemFetcher.makeItemFetcher("https://domkirke.herokuapp.com");
+            locations = itemFetcher.fetchItems();
 
             if(arSceneView == null) {
                 setupArSceneView();
@@ -364,7 +340,7 @@ public class MainActivity extends AppCompatActivity {
                     // Create the nodes that are to be rendered in the app if the renderable has been created
                     // and if they have not been created before
                     if (nodeLayoutRenderable != null && !locationNodesCreated) {
-                        createLocationNodes(realWorldLocationArray);
+                        createLocationNodes(locations);
                     }
 
 
@@ -484,8 +460,8 @@ public class MainActivity extends AppCompatActivity {
         return base;
     }
 
-    private void createLocationNodes(ArrayList<RealWorldLocation> locations) {
-            for(RealWorldLocation location: locations) {
+    private void createLocationNodes(Collection<Item> locations) {
+            for (Item location: locations) {
                 Node locationNode = getLocationNode(nodeLayoutRenderable);
                 locationNode.setOnTapListener((v, event) -> {
                     if(outerConstraintLayout.getVisibility()== View.GONE) {
@@ -496,7 +472,7 @@ public class MainActivity extends AppCompatActivity {
                 });
 
                 LocationMarker marker = new LocationMarker(
-                        location.getLon(), location.getLat(),
+                        location.getLongitude(), location.getLatitude(),
                         locationNode);
                 if(ONLY_RENDER_NODES_WITHIN != -1) {
                     marker.setOnlyRenderWhenWithin(ONLY_RENDER_NODES_WITHIN);

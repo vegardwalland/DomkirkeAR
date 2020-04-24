@@ -13,6 +13,7 @@ import java.util.Collection;
 public class ItemFetcher {
 
     public static void main(String[] args) {
+
         ItemFetcher itemFetcher = ItemFetcher.makeItemFetcher("http://localhost:3000");
         Collection<Item> items = itemFetcher.fetchItems();
         for (Item item : items) {

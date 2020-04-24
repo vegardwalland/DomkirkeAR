@@ -2,7 +2,7 @@ package eu.wallhack.gamlestavangerar.items;
 
 import androidx.annotation.NonNull;
 
-class Item {
+public class Item {
 
     private String _id;
     private String name;
