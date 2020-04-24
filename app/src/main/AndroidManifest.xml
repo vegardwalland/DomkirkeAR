@@ -32,6 +32,8 @@
              app is installed.
         -->
         <meta-data android:name="com.google.ar.core" android:value="required" />
+
+        <meta-data android:value="https://domkirke.herokuapp.com/" android:name="baseUrlForItemFetcher" />
     </application>
 
 </manifest>
