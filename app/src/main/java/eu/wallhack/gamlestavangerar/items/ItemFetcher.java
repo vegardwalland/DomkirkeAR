@@ -1,97 +1,82 @@
 package eu.wallhack.gamlestavangerar.items;
 
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.JsonObjectRequest;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 
-import org.javalite.http.Get;
-import org.javalite.http.Http;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 public class ItemFetcher {
 
-    public static void main(String[] args) {
+    private final String baseURL;
+    private final RequestQueue queue;
+    private final Gson gson;
 
-        ItemFetcher itemFetcher = ItemFetcher.makeItemFetcher("http://localhost:3000");
-        Collection<Item> items = itemFetcher.fetchItems();
-        for (Item item : items) {
-            System.out.println(item);
-        }
-    }
-
-    private String baseURL;
-    private Gson gson;
-
-
-    private ItemFetcher(String baseURL) {
+    public ItemFetcher(String baseURL, RequestQueue queue) {
+        this.queue = queue;
         this.baseURL = baseURL;
         gson = new Gson();
     }
 
-    public static ItemFetcher makeItemFetcher(String baseURL) {
-        return new ItemFetcher(baseURL);
+    public CompletableFuture<Collection<Item>> getItems() {
+        CompletableFuture<Collection<Item>> itemsFuture = new CompletableFuture<>();
+        fetchItems(itemsFuture);
+        return itemsFuture;
     }
 
-    public ArrayList<Item> fetchItems() {
-
-        ArrayList<Item> items = new ArrayList<>();
-        JsonObject[] itemsWithOnlyIDs = fetchItemsWithOnlyIDs();
-
-        // Use IDs to request the other details.
-        for (JsonObject itemWithOnlyID : itemsWithOnlyIDs) {
-            String id = itemWithOnlyID.get("_id").getAsString();
-            // TODO There's another way to join the elements of the URL
-            Item item = fetchItem(id);
-            items.add(item);
-        }
-
-        return items;
+    private void fetchItems(CompletableFuture<Collection<Item>> itemsFuture) {
+        JsonArrayRequest request = new JsonArrayRequest(Request.Method.GET, baseURL + "/api/items?fields=_id", null,
+                response -> fetchEachItem(itemsFuture, response),
+                // TODO Error handling
+                System.out::println
+        );
+        queue.add(request);
     }
 
-    private Item fetchItem(String id) {
-        Get singleItemRequest = Http.get(baseURL + "/api/items/" + id);
-        return gson.fromJson(singleItemRequest.text(), Item.class);
-    }
-
-    private JsonObject[] fetchItemsWithOnlyIDs() {
-        // Get all the IDs
-        Get itemListRequest = Http.get(baseURL + "/api/items?fields=_id");
-        return gson.fromJson(itemListRequest.text(), JsonObject[].class);
-    }
-
-    public String getBaseURL() {
-        return baseURL;
-    }
-
-    public void setBaseURL(String baseURL) {
-        this.baseURL = baseURL;
-    }
-}
-
-
-/*
-public class ItemFetcher {
-
-    public Collection<Item> getItems() {
-
-        if (!connectedToInternet()) {
-            // If not connected to internet, at least you can use the local items
-            if (hasLocalItems()) {
-                return getLocalItems();
-            } else {
-                // If there's no internet and no local items, the application can't be used.
-                throw NoLocalItemsException();
+    private void fetchEachItem(CompletableFuture<Collection<Item>> itemsFuture, JSONArray response) {
+        ArrayList<CompletableFuture<Item>> itemRequests = new ArrayList<>();
+        for (int i = 0; i < response.length(); i++) {
+            try {
+                String id = response.getJSONObject(i).getString("_id");
+                itemRequests.add(fetchItem(id));
+            } catch (JSONException e) {
+                // TODO Error handling
+                e.printStackTrace();
             }
         }
 
-        if (!hasLocalChecksums()) {
-            // Remote items have never been fetched
-            fetchAllRemoteItems();
-            return getLocalItems();
-        }
-
-        return items;
+        CompletableFuture.allOf(itemRequests.get(0)).thenAccept(aVoid -> {
+            Collection<Item> items = itemRequests.stream().map(CompletableFuture::join).collect(Collectors.toList());
+            itemsFuture.complete(items);
+        });
     }
-}*/
+
+    private CompletableFuture<Item> fetchItem(String id) {
+        String requestURL = baseURL + "/api/items/" + id;
+        CompletableFuture<Item> itemFuture = new CompletableFuture<>();
+        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, requestURL, null,
+                response -> itemFuture.complete(parseItem(response)),
+                // TODO Error handling
+                error -> {
+                    itemFuture.exceptionally(null);
+                }
+        );
+        queue.add(request);
+        return itemFuture;
+    }
+
+    private Item parseItem(JSONObject response) {
+        return gson.fromJson(response.toString(), Item.class);
+    }
+
+}

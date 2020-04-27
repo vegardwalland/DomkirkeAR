@@ -20,6 +20,8 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 
+import com.android.volley.RequestQueue;
+import com.android.volley.toolbox.Volley;
 import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.Session;
@@ -39,16 +41,11 @@ import com.google.ar.sceneform.ux.FootprintSelectionVisualizer;
 import com.google.ar.sceneform.ux.TransformableNode;
 import com.google.ar.sceneform.ux.TransformationSystem;
 
-import org.javalite.http.Get;
-import org.javalite.http.Http;
-
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import eu.wallhack.gamlestavangerar.common.PermissionHelper;
-import eu.wallhack.gamlestavangerar.common.RealWorldLocation;
 import eu.wallhack.gamlestavangerar.items.Item;
 import eu.wallhack.gamlestavangerar.items.ItemFetcher;
 import eu.wallhack.gamlestavangerar.listeners.LocationListener;
@@ -132,7 +129,7 @@ public class MainActivity extends AppCompatActivity {
                 locationScene.clearMarkers();
                 locationNodesCreated = false;
 
-                }
+            }
         });
 
         // Set up GPS
@@ -148,8 +145,8 @@ public class MainActivity extends AppCompatActivity {
         // Build a renderable from a 2D View.
         CompletableFuture<ViewRenderable> nodeLayout =
                 ViewRenderable.builder()
-                .setView(this, R.layout.node_layout)
-                .build();
+                        .setView(this, R.layout.node_layout)
+                        .build();
 
         CompletableFuture.allOf(nodeLayout)
                 .handle(
@@ -173,12 +170,7 @@ public class MainActivity extends AppCompatActivity {
                         });
 
 
-
-
-
     }
-
-
 
 
     @SuppressLint("MissingPermission")
@@ -196,17 +188,18 @@ public class MainActivity extends AppCompatActivity {
         PermissionHelper.askCameraPermission(this, noPermissionAlert);
         PermissionHelper.askGPSPermission(this, noPermissionAlert);
 
-        //Setup everything if permissions are granted
-        if(PermissionHelper.getCameraPermission(this) && PermissionHelper.getGPSPermission(this)) {
+        // Setup everything if permissions are granted
+        if (PermissionHelper.getCameraPermission(this) && PermissionHelper.getGPSPermission(this)) {
 
-            ItemFetcher itemFetcher = ItemFetcher.makeItemFetcher("https://domkirke.herokuapp.com");
-            locations = itemFetcher.fetchItems();
+            RequestQueue queue = Volley.newRequestQueue(this);
+            ItemFetcher itemFetcher = new ItemFetcher("https://domkirke.herokuapp.com", queue);
+            itemFetcher.getItems().thenAccept(items -> locations = items);
 
-            if(arSceneView == null) {
+            if (arSceneView == null) {
                 setupArSceneView();
             }
 
-            if(arSceneView != null) {
+            if (arSceneView != null) {
                 try {
                     arSceneView.resume();
                 } catch (CameraNotAvailableException e) {
@@ -236,7 +229,6 @@ public class MainActivity extends AppCompatActivity {
         // If the app has no permission to access GPS or camera, none of the processes needed can be initialised.
         // The app will then just show an AlertDialog which informs the user that these permissions are needed
     }
-
 
 
     @SuppressLint("MissingPermission")
@@ -331,7 +323,7 @@ public class MainActivity extends AppCompatActivity {
 
                     // Check if a forced node update should occur
                     if (location != null && location.hasAccuracy()) {
-                        if(checkMovement(FORCE_UPDATE_NODES_AFTER_METERS)) {
+                        if (checkMovement(FORCE_UPDATE_NODES_AFTER_METERS)) {
                             locationScene.clearMarkers();
                             locationNodesCreated = false;
                         }
@@ -350,7 +342,7 @@ public class MainActivity extends AppCompatActivity {
                         // ArCore Location creates a new node each time it updates the location of its locationMarkers
                         // By checking if the children of the sceneview scene is bigger than the amount of locationMarkers plus camera and sun node
                         // We can delete the surplus unused nodes
-                        if (arSceneView.getScene().getChildren().size() != locationScene.mLocationMarkers.size()+2) {
+                        if (arSceneView.getScene().getChildren().size() != locationScene.mLocationMarkers.size() + 2) {
                             deleteSurplusNodes();
                         }
                     }
@@ -367,9 +359,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private boolean checkMovement(double meters) {
-        if(meters == -1) return false;
+        if (meters == -1) return false;
         meters = meters * 0.000001; // Turn meters into meters in latitude or longitude.
-        if(hasDeviceMoved(meters, location.getLatitude(), previousLatitude)
+        if (hasDeviceMoved(meters, location.getLatitude(), previousLatitude)
                 || hasDeviceMoved(meters, location.getLongitude(), previousLongitude)) {
             previousLongitude = location.getLongitude();
             previousLatitude = location.getLatitude();
@@ -378,9 +370,9 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
-        //Return true if the device has moved more than the supplied meters in latitude or longitude
+    //Return true if the device has moved more than the supplied meters in latitude or longitude
     private boolean hasDeviceMoved(double meters, double currentPos, double previousPos) {
-        if(currentPos > (previousPos + meters) || currentPos < (previousPos - meters)) {
+        if (currentPos > (previousPos + meters) || currentPos < (previousPos - meters)) {
             return true;
         }
         return false;
@@ -452,7 +444,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private Node getLocationNode(Renderable renderable) {
-        TransformationSystem transformationSystem=new TransformationSystem(getResources().getDisplayMetrics(),new FootprintSelectionVisualizer());
+        TransformationSystem transformationSystem = new TransformationSystem(getResources().getDisplayMetrics(), new FootprintSelectionVisualizer());
         TransformableNode base = new TransformableNode(transformationSystem);
         base.getScaleController().setMaxScale(40.99f);
         base.getScaleController().setMinScale(08.98f);
@@ -461,28 +453,31 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void createLocationNodes(Collection<Item> locations) {
-            for (Item location: locations) {
-                Node locationNode = getLocationNode(nodeLayoutRenderable);
-                locationNode.setOnTapListener((v, event) -> {
-                    if(outerConstraintLayout.getVisibility()== View.GONE) {
-                        outerConstraintLayout.setVisibility(View.VISIBLE);
-                    }
-                    titleText.setText(location.getName());
-                    contentText.setText(location.getDescription());
-                });
+        // TODO Possibly unnecessary null check
+        if (locations == null) return;
 
-                LocationMarker marker = new LocationMarker(
-                        location.getLongitude(), location.getLatitude(),
-                        locationNode);
-                if(ONLY_RENDER_NODES_WITHIN != -1) {
-                    marker.setOnlyRenderWhenWithin(ONLY_RENDER_NODES_WITHIN);
+        for (Item location : locations) {
+            Node locationNode = getLocationNode(nodeLayoutRenderable);
+            locationNode.setOnTapListener((v, event) -> {
+                if (outerConstraintLayout.getVisibility() == View.GONE) {
+                    outerConstraintLayout.setVisibility(View.VISIBLE);
                 }
-                marker.setScalingMode(LocationMarker.ScalingMode.GRADUAL_TO_MAX_RENDER_DISTANCE);
+                titleText.setText(location.getName());
+                contentText.setText(location.getDescription());
+            });
 
-                // Adding a location marker of a 2D model
-                locationScene.mLocationMarkers.add(marker);
+            LocationMarker marker = new LocationMarker(
+                    location.getLongitude(), location.getLatitude(),
+                    locationNode);
+            if (ONLY_RENDER_NODES_WITHIN != -1) {
+                marker.setOnlyRenderWhenWithin(ONLY_RENDER_NODES_WITHIN);
             }
-            locationNodesCreated = true;
+            marker.setScalingMode(LocationMarker.ScalingMode.GRADUAL_TO_MAX_RENDER_DISTANCE);
+
+            // Adding a location marker of a 2D model
+            locationScene.mLocationMarkers.add(marker);
+        }
+        locationNodesCreated = true;
     }
 
     private void assignViews() {
