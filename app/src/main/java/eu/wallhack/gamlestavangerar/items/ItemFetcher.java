@@ -55,9 +55,12 @@ public class ItemFetcher {
             }
         }
 
-        CompletableFuture.allOf(itemRequests.get(0)).thenAccept(aVoid -> {
-            Collection<Item> items = itemRequests.stream().map(CompletableFuture::join).collect(Collectors.toList());
-            itemsFuture.complete(items);
+        // Once all fetches are complete, collect the items and complete the future.
+        CompletableFuture.allOf(itemRequests.toArray(new CompletableFuture<?>[0])).whenComplete((aVoid, th) -> {
+            if(th == null) {
+                Collection<Item> items = itemRequests.stream().map(CompletableFuture::join).collect(Collectors.toList());
+                itemsFuture.complete(items);
+            }
         });
     }
 
