@@ -83,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
     private Session session;
 
     // Inside how many meters around the user the nodes should be rendered. Set to -1 to set to max
-    private int ONLY_RENDER_NODES_WITHIN = -1;
+    private int ONLY_RENDER_NODES_WITHIN = 50;
 
     // How many meters the user can move before a forced node rerendering happens. Set to -1 to disable.
     private int FORCE_UPDATE_NODES_AFTER_METERS = 20;
@@ -121,13 +121,17 @@ public class MainActivity extends AppCompatActivity {
         });
 
         miscButton = findViewById(R.id.miscButton);
-        miscButton.setVisibility(View.GONE);
         miscButton.setOnClickListener(new Button.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-                locationScene.clearMarkers();
-                locationNodesCreated = false;
+                if (textView.getVisibility() == View.GONE) {
+                    textView.setVisibility(View.VISIBLE);
+                    miscButton.setText("Hide Debug Info");
+                    return;
+                }
+                textView.setVisibility(View.GONE);
+                miscButton.setText("Show Debug Info");
 
             }
         });
@@ -169,7 +173,6 @@ public class MainActivity extends AppCompatActivity {
                             return null;
                         });
 
-
     }
 
 
@@ -191,6 +194,7 @@ public class MainActivity extends AppCompatActivity {
         // Setup everything if permissions are granted
         if (PermissionHelper.getCameraPermission(this) && PermissionHelper.getGPSPermission(this)) {
 
+            // TODO Move this to onCreate and check for internet access
             RequestQueue queue = Volley.newRequestQueue(this);
             ItemFetcher itemFetcher = new ItemFetcher("https://domkirke.herokuapp.com", queue);
             itemFetcher.getItems().thenAccept(items -> locations = items);
@@ -475,6 +479,7 @@ public class MainActivity extends AppCompatActivity {
             marker.setScalingMode(LocationMarker.ScalingMode.GRADUAL_TO_MAX_RENDER_DISTANCE);
 
             // Adding a location marker of a 2D model
+            locationScene.shouldOffsetOverlapping();
             locationScene.mLocationMarkers.add(marker);
         }
         locationNodesCreated = true;

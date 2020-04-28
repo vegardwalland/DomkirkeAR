@@ -36,7 +36,7 @@
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="137dp"
-        android:text='"Misc"' />
+        android:text="Show Debug Info" />
 
     <Button
         android:id="@+id/nullProcessCount"
