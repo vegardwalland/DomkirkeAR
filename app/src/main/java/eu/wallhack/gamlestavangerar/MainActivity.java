@@ -83,7 +83,7 @@ public class MainActivity extends AppCompatActivity {
     private Session session;
 
     // Inside how many meters around the user the nodes should be rendered. Set to -1 to set to max
-    private int ONLY_RENDER_NODES_WITHIN = 50;
+    private int ONLY_RENDER_NODES_WITHIN = 70;
 
     // How many meters the user can move before a forced node rerendering happens. Set to -1 to disable.
     private int FORCE_UPDATE_NODES_AFTER_METERS = 20;
@@ -429,6 +429,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    // TODO Fix overlapping node raytracing hitting both nodes
     private void setupInformationOverlayFunctionality() {
         //Configure button to close popup window
         closeOverlayBtn.setOnClickListener(new View.OnClickListener() {
