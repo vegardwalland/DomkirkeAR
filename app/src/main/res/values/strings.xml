@@ -1,11 +1,17 @@
 <resources>
     <string name="app_name">Gamle Stavanger AR</string>
     <string name="button_to_close_overlay">Button to close overlay</string>
-    <string name="title_text">The Curious Hallway</string>
-    <string name="content_text">At Maldron Hotel Smithfield, there exists a secret hallway. A hallway which is accessible
-    through two doors. It might look like any ordinary hallway, but once inside there is no escape.
-    In the middle of the hallway, up a small flight of stairs, a telephone is fastened to the wall.
-    If you were to put the telephone to your ear, the only thing you would hear is
-    \"What the feck dude. You\'re not supposed to go into that hallway. Ugh, I guess I\'ll come let you out\"</string>
     <string name="photo_description">Description of photo</string>
+    <string name="firstTimeUseInformation">When going through Gamle Stavanger, this app will show points of interest on the screen.
+        These can be tapped to reveal information about them.\n\n
+        Just open the app when in Gamle Stavanger, and look around using your device\'s camera to get started.
+        \n\n
+        This application runs on Google Play Services for AR (ARCore),
+        which is provided by Google LLC and governed by the
+        <a href="https://developers.google.com/ar/distribute/privacy-requirements">Google Privacy Policy</a>.
+    </string>
+    <string name="privacy_information">
+        This application runs on Google Play Services for AR (ARCore),
+        which is provided by Google LLC and governed by the
+        <a href="https://developers.google.com/ar/distribute/privacy-requirements">Google Privacy Policy</a>.</string>
 </resources>

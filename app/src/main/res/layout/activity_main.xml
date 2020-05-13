@@ -1,11 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mainLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity">
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/main_parent_left_guideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        app:layout_constraintGuide_percent="0.05" />
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/main_parent_bottom_guideline"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.95" />
 
     <com.google.ar.sceneform.ArSceneView
         android:id="@+id/ar_scene_view"
@@ -17,35 +32,21 @@
         android:layout_marginStart="0dp"
         android:layout_marginTop="0dp" />
 
-    <TextView
-        android:id="@+id/topView"
-        android:layout_width="350dp"
-        android:layout_height="240dp"
-        android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="30dp"
-        android:textColor="@android:color/holo_red_dark"
-        android:textSize="18sp"
-        android:textStyle="bold" />
 
-
-    <Button
-        android:id="@+id/miscButton"
+    <ImageButton
+        android:id="@+id/privacyInfoBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="137dp"
-        android:text="Show Debug Info" />
+        android:background="@color/material_on_background_disabled"
+        android:backgroundTint="#00FFFFFF"
+        android:contentDescription="@string/button_to_close_overlay"
+        android:src="@android:drawable/ic_dialog_info"
+        android:tint="#00FFFFFF"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="@+id/main_parent_bottom_guideline"
+        app:layout_constraintLeft_toLeftOf="@+id/main_parent_left_guideline" />
 
-    <Button
-        android:id="@+id/nullProcessCount"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"
-        android:layout_marginBottom="47dp"
-        android:text='"Null Process Count"' />
+
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/outerConstraintLayout"
@@ -159,9 +160,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:gravity="center"
-                android:text="@string/title_text"
                 android:textColor="#0A0F32"
-                android:textSize="40sp"
+                android:textSize="38sp"
                 app:layout_constraintLeft_toRightOf="@id/left_title_guideline"
                 app:layout_constraintRight_toLeftOf="@+id/right_title_guideline"
                 app:layout_constraintTop_toTopOf="@+id/top_button_guideline" />
@@ -190,11 +190,12 @@
                         android:id="@+id/contentTextView"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:gravity="center"
+                        android:layout_below="@id/contentImageView"
                         android:layout_marginTop="10dp"
-                        android:text="@string/content_text"
-                        android:textSize="30sp"
-                        android:layout_below="@id/contentImageView"/>
+                        android:gravity="center"
+                        android:paddingBottom="20sp"
+                        android:text="@string/firstTimeUseInformation"
+                        android:textSize="30sp" />
 
                 </RelativeLayout>
 
@@ -207,4 +208,4 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
 
 
-</RelativeLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

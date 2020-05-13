@@ -9,12 +9,15 @@ import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -22,6 +25,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.Volley;
+import com.google.ar.core.ArCoreApk;
 import com.google.ar.core.Config;
 import com.google.ar.core.Frame;
 import com.google.ar.core.Session;
@@ -31,6 +35,7 @@ import com.google.ar.core.exceptions.UnavailableApkTooOldException;
 import com.google.ar.core.exceptions.UnavailableArcoreNotInstalledException;
 import com.google.ar.core.exceptions.UnavailableDeviceNotCompatibleException;
 import com.google.ar.core.exceptions.UnavailableSdkTooOldException;
+import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationException;
 import com.google.ar.sceneform.ArSceneView;
 import com.google.ar.sceneform.FrameTime;
 import com.google.ar.sceneform.Node;
@@ -60,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
     private ViewRenderable nodeLayoutRenderable;
 
     // The layout elements
-    private TextView textView;
+    private ImageButton privacyInfoBtn;
     private ImageButton closeOverlayBtn;
     private ConstraintLayout outerConstraintLayout;
     private TextView titleText;
@@ -82,14 +87,17 @@ public class MainActivity extends AppCompatActivity {
     private ArSceneView arSceneView;
     private Session session;
 
+    // Set to true ensures requestInstall() triggers installation of Google Play Services for AR if necessary.
+    private boolean mUserRequestedInstall = true;
+
     // Inside how many meters around the user the nodes should be rendered. Set to -1 to set to max
-    private int ONLY_RENDER_NODES_WITHIN = 70;
+    private int ONLY_RENDER_NODES_WITHIN = -1;
 
     // How many meters the user can move before a forced node rerendering happens. Set to -1 to disable.
     private int FORCE_UPDATE_NODES_AFTER_METERS = 20;
     private double previousLongitude;
     private double previousLatitude;
-    // Are location nodes to be created
+    // Have location nodes been created?
     private boolean locationNodesCreated = false;
 
     private Collection<Item> locations;
@@ -107,34 +115,9 @@ public class MainActivity extends AppCompatActivity {
         // Get the different View elements and assign them to global variables
         assignViews();
 
-        textView.setVisibility(View.GONE);
-
-        // TODO REMOVE TESTING BUTTONS
-        nullProcessCountButton = findViewById(R.id.nullProcessCount);
-        nullProcessCountButton.setVisibility(View.GONE);
-
-        nullProcessCountButton.setOnClickListener(new Button.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                timesProcessed = 0;
-            }
-        });
-
-        miscButton = findViewById(R.id.miscButton);
-        miscButton.setOnClickListener(new Button.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                if (textView.getVisibility() == View.GONE) {
-                    textView.setVisibility(View.VISIBLE);
-                    miscButton.setText("Hide Debug Info");
-                    return;
-                }
-                textView.setVisibility(View.GONE);
-                miscButton.setText("Show Debug Info");
-
-            }
-        });
+        // Set outerConstraintLayout to visible to show usage information about the app
+        outerConstraintLayout.setVisibility(View.VISIBLE);
+        contentText.setMovementMethod(LinkMovementMethod.getInstance());
 
         // Set up GPS
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
@@ -194,10 +177,34 @@ public class MainActivity extends AppCompatActivity {
         // Setup everything if permissions are granted
         if (PermissionHelper.getCameraPermission(this) && PermissionHelper.getGPSPermission(this)) {
 
+            // Make sure Google Play Services for AR is installed and up to date.
+            try {
+                if (arSceneView == null || arSceneView.getSession() == null) {
+                    switch (ArCoreApk.getInstance().requestInstall(this, mUserRequestedInstall)) {
+                        case INSTALLED:
+                            // Success, continue onResume()
+                            break;
+                        case INSTALL_REQUESTED:
+                            // Ensures next invocation of requestInstall() will either return
+                            // INSTALLED or throw an exception.
+                            mUserRequestedInstall = false;
+                            return;
+                    }
+                }
+            } catch (UnavailableUserDeclinedInstallationException | UnavailableDeviceNotCompatibleException e) {
+                // Display an appropriate message to the user and return gracefully.
+                Toast.makeText(this, "Installation or update of Google Play Services for AR could not be completed. " +
+                        "Make sure you are using a device that supports ARCore.", Toast.LENGTH_LONG)
+                        .show();
+                return;
+            }
+
             // TODO Move this to onCreate and check for internet access
             RequestQueue queue = Volley.newRequestQueue(this);
             ItemFetcher itemFetcher = new ItemFetcher("https://domkirke.herokuapp.com", queue);
             itemFetcher.getItems().thenAccept(items -> locations = items);
+
+
 
             if (arSceneView == null) {
                 setupArSceneView();
@@ -237,48 +244,7 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("MissingPermission")
     private void onUpdateFrame(FrameTime frameTime) {
-
-        double latitude = 0;
-        double longitude = 0;
-        int noOfMarkers = 0;
-        double distanceInAR = 0;
-        Vector3 anchorNodePosition = Vector3.zero();
-        Vector3 markerNodePosition = Vector3.zero();
-        for (LocationMarker marker : locationScene.mLocationMarkers) {
-            noOfMarkers = locationScene.mLocationMarkers.size();
-            latitude = marker.latitude;
-            longitude = marker.longitude;
-            if (marker.anchorNode != null) {
-                marker.anchorNode.setLocalPosition(Vector3.zero());
-                anchorNodePosition = marker.anchorNode.getLocalPosition();
-                distanceInAR = marker.anchorNode.getDistanceInAR();
-            }
-
-            if (marker.node.isActive()) {
-                marker.node.setLocalPosition(Vector3.zero());
-                markerNodePosition = marker.node.getLocalPosition();
-            }
-        }
-
-        @SuppressLint("DefaultLocale") String debugText = String.format("Our pos %s\n" +
-                        "No of nodes: %d\n" +
-                        "Marker latitude: %f\n" +
-                        "Marker longitude: %f\n" +
-                        "Number of markers: %d\n" +
-                        "Distance in AR: %f\n" +
-                        "Anchor position: %s\n" +
-                        "Node position: %s\n" +
-                        "timesProcessed: %d\n",
-                arSceneView.getScene().getCamera().getLocalPosition(),
-                arSceneView.getScene().getChildren().size(),
-                latitude,
-                longitude,
-                noOfMarkers,
-                distanceInAR,
-                anchorNodePosition,
-                markerNodePosition,
-                timesProcessed);
-        textView.setText(debugText);
+        //The update
 
     }
 
@@ -326,6 +292,7 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     // Check if a forced node update should occur
+                    // TODO this could might be done with height instead of location
                     if (location != null && location.hasAccuracy()) {
                         if (checkMovement(FORCE_UPDATE_NODES_AFTER_METERS)) {
                             locationScene.clearMarkers();
@@ -339,16 +306,15 @@ public class MainActivity extends AppCompatActivity {
                         createLocationNodes(locations);
                     }
 
+                    // ArCore Location creates a new node each time it updates the location of its locationMarkers
+                    // By checking if the children of the sceneview scene is bigger than the amount of locationMarkers plus camera and sun node
+                    // We can delete the surplus unused nodes
+                    if (arSceneView.getScene().getChildren().size() != locationScene.mLocationMarkers.size() + 2) {
+                        deleteSurplusNodes();
+                    }
 
                     if (locationScene != null) {
                         locationScene.processFrame(frame);
-
-                        // ArCore Location creates a new node each time it updates the location of its locationMarkers
-                        // By checking if the children of the sceneview scene is bigger than the amount of locationMarkers plus camera and sun node
-                        // We can delete the surplus unused nodes
-                        if (arSceneView.getScene().getChildren().size() != locationScene.mLocationMarkers.size() + 2) {
-                            deleteSurplusNodes();
-                        }
                     }
 
                 });
@@ -431,6 +397,16 @@ public class MainActivity extends AppCompatActivity {
 
     // TODO Fix overlapping node raytracing hitting both nodes
     private void setupInformationOverlayFunctionality() {
+
+        privacyInfoBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                outerConstraintLayout.setVisibility(View.VISIBLE);
+                contentText.setText(R.string.privacy_information);
+                contentText.setMovementMethod(LinkMovementMethod.getInstance());
+            }
+        });
+
         //Configure button to close popup window
         closeOverlayBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -446,13 +422,15 @@ public class MainActivity extends AppCompatActivity {
                 outerConstraintLayout.setVisibility(View.GONE);
             }
         });
+
+
     }
 
     private Node getLocationNode(Renderable renderable) {
         TransformationSystem transformationSystem = new TransformationSystem(getResources().getDisplayMetrics(), new FootprintSelectionVisualizer());
         TransformableNode base = new TransformableNode(transformationSystem);
-        base.getScaleController().setMaxScale(40.99f);
-        base.getScaleController().setMinScale(08.98f);
+        base.getScaleController().setMaxScale(30.0f);
+        base.getScaleController().setMinScale(03.0f);
         base.setRenderable(renderable);
         return base;
     }
@@ -469,6 +447,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 titleText.setText(location.getName());
                 contentText.setText(location.getDescription());
+                contentText.setMovementMethod(null);
             });
 
             LocationMarker marker = new LocationMarker(
@@ -487,7 +466,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void assignViews() {
-        textView = findViewById(R.id.topView);
+        privacyInfoBtn = findViewById(R.id.privacyInfoBtn);
         closeOverlayBtn = findViewById(R.id.closeOverlayBtn);
         outerConstraintLayout = findViewById(R.id.outerConstraintLayout);
         titleText = findViewById(R.id.titleTextView);
