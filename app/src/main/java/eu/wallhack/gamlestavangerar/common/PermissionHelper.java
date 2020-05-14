@@ -16,8 +16,6 @@ public class PermissionHelper {
     public static final int CAMERA_REQUEST_CODE = 9001;
     public static final int GPS_REQUEST_CODE = 9002;
 
-
-
     public static void askCameraPermission(Activity activity, AlertDialog alertDialog) {
         if (!getCameraPermission(activity)) {
             if (hasCameraPermissionBeenDeniedBefore(activity)) {
@@ -64,12 +62,11 @@ public class PermissionHelper {
     }
 
     public static AlertDialog setupNoPermissionAlert(Context context) {
-        AlertDialog.Builder builder1 = new AlertDialog.Builder(context);
-        builder1.setMessage("The app needs access to camera and position to function");
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setMessage("The app needs access to camera and position to function");
 
-       return builder1.create();
+       return builder.create();
     }
-
 
 
 }

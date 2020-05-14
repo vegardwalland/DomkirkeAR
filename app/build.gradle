@@ -11,6 +11,9 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        // Base URL for where the Item Fetcher gets Items.
+        // e.g. https://domkirke.herokuapp.com or http://localhost:3000
+        buildConfigField("String", "BARE_URL_ITEM_FETCHER", "\"https://domkirke.herokuapp.com\"")
     }
     buildTypes {
         release {
@@ -45,10 +48,3 @@ dependencies {
     testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-engine', version: '5.6.2'
     testImplementation "org.mockito:mockito-core:3.3.3"
 }
-
-apply plugin: 'com.google.ar.sceneform.plugin'
-
-sceneform.asset('src/main/assets/models/andy.obj',
-        'default',
-        'src/main/assets/models/andy.sfa',
-        'src/main/res/raw/andy')

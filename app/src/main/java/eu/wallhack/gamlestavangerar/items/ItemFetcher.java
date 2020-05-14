@@ -56,7 +56,7 @@ public class ItemFetcher {
         }
 
         // Once all fetches are complete, collect the items and complete the future.
-        CompletableFuture.allOf(itemRequests.toArray(new CompletableFuture<?>[0])).whenComplete((aVoid, th) -> {
+        CompletableFuture.allOf(itemRequests.toArray(new CompletableFuture<?>[itemRequests.size()])).whenComplete((aVoid, th) -> {
             if(th == null) {
                 Collection<Item> items = itemRequests.stream().map(CompletableFuture::join).collect(Collectors.toList());
                 itemsFuture.complete(items);
